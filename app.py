@@ -95,21 +95,34 @@ def base_map():
 
 def heatmap_map():
     m = base_map()
+    # HeatMap
     HeatMap(heat_data, radius=25, blur=15).add_to(m)
-    # fonction utilitaire pour encoder image en base64
-    import base64
-    def encode_img(path):
-        with open(path, 'rb') as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
+    # Cercles de chaleur de 2km autour de chaque point
     for pt in points:
+        # dégradé couleur du plus risqué (rouge) vers moins (jaune)
+        folium.Circle(
+            location=[pt['lat'], pt['lon']],
+            radius=2000,  # 2 km
+            color='#de2d26',
+            fill=True,
+            fill_opacity=0.2
+        ).add_to(m)
+        # marqueur avec popup
         html = f"<h4>{pt['name']}</h4><p>{pt['comment']}</p>"
+        import base64
+        def encode_img(path):
+            with open(path, 'rb') as f:
+                return base64.b64encode(f.read()).decode()
         for img in pt['images']:
             if os.path.exists(img):
                 b64 = encode_img(img)
                 html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
         folium.CircleMarker(
-            location=[pt['lat'],pt['lon']], radius=10, color='red', fill=True, fillOpacity=0.7,
+            location=[pt['lat'],pt['lon']],
+            radius=8,
+            color='red',
+            fill=True,
+            fillOpacity=1,
             popup=folium.Popup(html, max_width=300)
         ).add_to(m)
     return m
