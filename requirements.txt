@@ -5,3 +5,8 @@ geopandas
 pandas
 numpy
 rasterio
+shapely
+requests
+beautifulsoup4
+altair
+meteostat
