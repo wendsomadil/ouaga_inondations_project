@@ -96,10 +96,18 @@ def base_map():
 def heatmap_map():
     m = base_map()
     HeatMap(heat_data, radius=25, blur=15).add_to(m)
+    # fonction utilitaire pour encoder image en base64
+    import base64
+    def encode_img(path):
+        with open(path, 'rb') as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
     for pt in points:
         html = f"<h4>{pt['name']}</h4><p>{pt['comment']}</p>"
         for img in pt['images']:
-            if os.path.exists(img): html += f"<img src='{img}' width='150'><br>"
+            if os.path.exists(img):
+                b64 = encode_img(img)
+                html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
         folium.CircleMarker(
             location=[pt['lat'],pt['lon']], radius=10, color='red', fill=True, fillOpacity=0.7,
             popup=folium.Popup(html, max_width=300)
@@ -135,6 +143,7 @@ choice = st.sidebar.radio('Onglet', tabs)
 st.subheader(choice)
 
 if choice == 'Pluviométrie':
+    # --- Données annuelles ---
     if not pluvio.empty:
         st.subheader('Données annuelles')
         st.dataframe(pluvio)
@@ -149,18 +158,27 @@ if choice == 'Pluviométrie':
         anomalies = pluvio.set_index('year')['value'] - pluvio['value'].mean()
         st.bar_chart(anomalies)
     else:
-        st.info("Pas de données annuelles.")
+        st.info("Pas de données annuelles disponibles.")
 
+    # --- Moyennes mensuelles ---
     if not pluvio_mensuel.empty:
-        st.subheader('Moyennes mensuelles (1991-2020)')
-        chart = alt.Chart(pluvio_mensuel).mark_bar().encode(
-            x=alt.X('Mois:N', sort=pluvio_mensuel['Mois']),
+        st.subheader('Moyennes mensuelles (Janv–Déc)')
+        # détecter nom de colonne mois
+        month_col = 'Mois' if 'Mois' in pluvio_mensuel.columns else 'month'
+        # tri
+        if month_col == 'Mois':
+            order = ["Janv.","Févr.","Mars","Avr.","Mai","Juin","Juil.","Août","Sept.","Oct.","Nov.","Déc."]
+            x_field = alt.X(f'{month_col}:N', sort=order)
+        else:
+            x_field = alt.X(f'{month_col}:N', sort=pluvio_mensuel[month_col].unique().tolist())
+        chart = alt.Chart(pluvio_mensuel).mark_bar(color='#3182bd').encode(
+            x=x_field,
             y='value:Q',
-            color=alt.value('#3182bd')
+            tooltip=[month_col,'value']
         ).properties(height=300)
         st.altair_chart(chart, use_container_width=True)
     else:
-        st.info("Pas de données mensuelles.")
+        st.info("Pas de données mensuelles disponibles.")
 
 else:
     func_map = {'Zone de chaleur':heatmap_map,
