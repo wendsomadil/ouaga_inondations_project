@@ -13,7 +13,7 @@ import altair as alt
 warnings.filterwarnings("ignore")
 
 # 1. Configuration de la page
-st.set_page_config("Zones inondables & Pluviométrie – Ouagadougou", layout="wide")
+st.set_page_config(page_title="Zones inondables & Pluviométrie – Ouagadougou", layout="wide")
 st.title("Zones inondables & Pluviométrie – Ouagadougou")
 st.sidebar.header("Sélection de l'onglet")
 
@@ -70,7 +70,9 @@ def load_pluvio_mensuel():
     path = "data/pluvio_mensuel.csv"
     if os.path.exists(path):
         df = pd.read_csv(path)
-        return df.rename(columns={'month':'Mois'})
+        if 'month' in df.columns:
+            df = df.rename(columns={'month':'Mois'})
+        return df
     return pd.DataFrame(columns=['Mois','value','region'])
 pluvio_mensuel = load_pluvio_mensuel()
 
@@ -80,7 +82,7 @@ def encode_img(path):
     with open(path,'rb') as f:
         return base64.b64encode(f.read()).decode()
 
-# 6. Fonctions de rendu
+# 6. Fonctions de rendu Folium
 
 def base_map():
     m = folium.Map(location=[12.35, -1.60], zoom_start=12, tiles="CartoDB positron")
@@ -100,25 +102,30 @@ def base_map():
 def heatmap_map():
     m = base_map()
     HeatMap(heat_data, radius=25, blur=15).add_to(m)
-    # Cercles: 1 km + halo 1 km
+    # Cercles: 1 km zone principale + 1 km halo
     for pt in points:
         lat, lon = pt['lat'], pt['lon']
+        # Zone principale 1 km (rouge translucide)
         folium.Circle(
-            location=[lat, lon], radius=1000,
+            location=[lat, lon],
+            radius=1000,
             color='#de2d26', fill=True, fill_opacity=0.3
         ).add_to(m)
+        # Halo supplémentaire jusqu’à 2 km (jaune translucide)
         folium.Circle(
-            location=[lat, lon], radius=2000,
+            location=[lat, lon],
+            radius=2000,
             color='#feb24c', fill=True, fill_opacity=0.2
         ).add_to(m)
+        # Popup marker au centre
         html = f"<h4>{pt['name']}</h4><p>{pt['comment']}</p>"
         for img_path in pt['images']:
             if os.path.exists(img_path):
                 b64 = encode_img(img_path)
                 html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
-        folium.CircleMarker(
-            location=[lat,lon], radius=8,
-            color='red', fill=True, fill_opacity=1,
+        folium.Marker(
+            location=[lat, lon],
+            icon=folium.Icon(color='red', icon='tint', prefix='fa'),
             popup=folium.Popup(html, max_width=300)
         ).add_to(m)
     return m
@@ -153,24 +160,24 @@ choice = st.sidebar.radio('Onglet', tabs)
 st.subheader(choice)
 
 if choice == 'Pluviométrie':
-    # -- Annuel
+    # Données annuelles
     if not pluvio.empty:
-        st.subheader('Données annuelles')
+        st.subheader('Données annuelles (2000–2024)')
         st.dataframe(pluvio)
-        st.markdown('**Évolution (2000–2024)**')
+        st.markdown('**Évolution annuelle**')
         st.line_chart(pluvio.set_index('year')['value'])
         st.markdown('**Moyenne mobile 3 ans**')
         st.line_chart(pluvio.set_index('year')['value'].rolling(3,center=True).mean())
-        st.markdown('**Histogramme décennal**')
+        st.markdown('**Décennies**')
         dec = pluvio.set_index('year')['value'].groupby(lambda y:(y//10)*10).sum()
         st.bar_chart(dec)
-        st.markdown('**Anomalies annuelles**')
+        st.markdown('**Anomalies**')
         st.bar_chart(pluvio.set_index('year')['value'] - pluvio['value'].mean())
     else:
-        st.info('Pas de données annuelles.')
-    # -- Mensuel
+        st.info('Pas de données annuelles disponibles.')
+    # Moyennes mensuelles
     if not pluvio_mensuel.empty:
-        st.subheader('Moyennes mensuelles (1–12)')
+        st.subheader('Moyennes mensuelles')
         chart = alt.Chart(pluvio_mensuel).mark_bar(color='#3182bd').encode(
             x=alt.X('Mois:O', title='Mois', sort=list(range(1,13))),
             y=alt.Y('value:Q', title='Pluviométrie (mm)'),
@@ -178,7 +185,7 @@ if choice == 'Pluviométrie':
         ).properties(height=300)
         st.altair_chart(chart, use_container_width=True)
     else:
-        st.info('Pas de données mensuelles.')
+        st.info('Pas de données mensuelles disponibles.')
 else:
     mapper = {'Zone de chaleur':heatmap_map,'Risque':risk_map,'Zonage':zonage_map}
     st_folium(mapper[choice](), width=800, height=600)
