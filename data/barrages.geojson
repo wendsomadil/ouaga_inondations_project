@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Barrage Modèle" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [ -1.638734, 12.367098 ],
+            [ -1.638734, 12.357098 ],
+            [ -1.628734, 12.357098 ],
+            [ -1.628734, 12.367098 ],
+            [ -1.638734, 12.367098 ]
+          ]
+        ]
+      }
+    }
+  ]
+}
