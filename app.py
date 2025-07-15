@@ -7,20 +7,20 @@ import geopandas as gpd
 import pandas as pd
 import os
 import warnings
-from shapely.geometry import Point
+import base64
 import altair as alt
 
 warnings.filterwarnings("ignore")
 
-# Page config
+# 1. Configuration de la page
 st.set_page_config("Zones inondables & Pluviométrie – Ouagadougou", layout="wide")
 st.title("Zones inondables & Pluviométrie – Ouagadougou")
 st.sidebar.header("Sélection de l'onglet")
 
-# 1. Points terrain
+# 2. Définition des points terrain
 points = [
     {"lat":12.286813, "lon":-1.612065, "name":"Zone A : BOASSA", 
-     "images":["images/boassa1.jpg","images/boassa2.jpg"], 
+     "images":["images/boassa1.jpg","images/boassa2.jpg"],
      "comment":"Le marigot déborde chaque année."},
     {"lat":12.324026, "lon":-1.609384, "name":"Zone B : YOAGHIN", 
      "images":["images/yoaghin1.jpg","images/yoaghin2.jpg"],
@@ -43,7 +43,7 @@ points = [
 ]
 heat_data = [(pt['lat'], pt['lon']) for pt in points]
 
-# 2. Chargement couches géo
+# 3. Chargement des couches géo (fallback vide)
 @st.cache_data
 def load_layer(path):
     if os.path.exists(path):
@@ -55,7 +55,7 @@ roads   = load_layer("data/voirie.geojson")
 water   = load_layer("data/hydrographie.geojson")
 grid    = load_layer("data/zones_base.geojson")
 
-# 3a. Pluviométrie annuelle
+# 4. Chargement des CSV pluviométrie
 @st.cache_data
 def load_pluvio():
     path = "data/pluviometrie.csv"
@@ -65,18 +65,22 @@ def load_pluvio():
     return pd.DataFrame(columns=['year','value','region'])
 pluvio = load_pluvio()
 
-# 3b. Pluviométrie mensuelle
 @st.cache_data
 def load_pluvio_mensuel():
     path = "data/pluvio_mensuel.csv"
     if os.path.exists(path):
         df = pd.read_csv(path)
-        # mois en int ou string
-        return df
+        return df.rename(columns={'month':'Mois'})
     return pd.DataFrame(columns=['Mois','value','region'])
 pluvio_mensuel = load_pluvio_mensuel()
 
-# 4. Fonctions de rendu
+# 5. Fonction utilitaire encodage image
+
+def encode_img(path):
+    with open(path,'rb') as f:
+        return base64.b64encode(f.read()).decode()
+
+# 6. Fonctions de rendu
 
 def base_map():
     m = folium.Map(location=[12.35, -1.60], zoom_start=12, tiles="CartoDB positron")
@@ -95,34 +99,26 @@ def base_map():
 
 def heatmap_map():
     m = base_map()
-    # HeatMap
     HeatMap(heat_data, radius=25, blur=15).add_to(m)
-    # Cercles de chaleur de 2km autour de chaque point
+    # Cercles: 1 km + halo 1 km
     for pt in points:
-        # dégradé couleur du plus risqué (rouge) vers moins (jaune)
+        lat, lon = pt['lat'], pt['lon']
         folium.Circle(
-            location=[pt['lat'], pt['lon']],
-            radius=2000,  # 2 km
-            color='#de2d26',
-            fill=True,
-            fill_opacity=0.2
+            location=[lat, lon], radius=1000,
+            color='#de2d26', fill=True, fill_opacity=0.3
         ).add_to(m)
-        # marqueur avec popup
+        folium.Circle(
+            location=[lat, lon], radius=2000,
+            color='#feb24c', fill=True, fill_opacity=0.2
+        ).add_to(m)
         html = f"<h4>{pt['name']}</h4><p>{pt['comment']}</p>"
-        import base64
-        def encode_img(path):
-            with open(path, 'rb') as f:
-                return base64.b64encode(f.read()).decode()
-        for img in pt['images']:
-            if os.path.exists(img):
-                b64 = encode_img(img)
+        for img_path in pt['images']:
+            if os.path.exists(img_path):
+                b64 = encode_img(img_path)
                 html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
         folium.CircleMarker(
-            location=[pt['lat'],pt['lon']],
-            radius=8,
-            color='red',
-            fill=True,
-            fillOpacity=1,
+            location=[lat,lon], radius=8,
+            color='red', fill=True, fill_opacity=1,
             popup=folium.Popup(html, max_width=300)
         ).add_to(m)
     return m
@@ -134,7 +130,7 @@ def risk_map():
         folium.Choropleth(
             geo_data=grid.__geo_interface__, data=grid,
             columns=['id','classe'], key_on='feature.properties.id',
-            fill_color='YlOrRd', legend_name='Risque (1-5)'
+            fill_color='YlOrRd', legend_name='Risque (1–5)'
         ).add_to(m)
     return m
 
@@ -142,64 +138,51 @@ def risk_map():
 def zonage_map():
     m = base_map()
     if 'classe' in grid.columns:
-        cols = {1:'#31a354', 3:'#fed976', 5:'#de2d26'}
-        for _,r in grid.iterrows():
+        palette = {1:'#31a354', 3:'#fed976', 5:'#de2d26'}
+        for _,row in grid.iterrows():
+            color = palette.get(row['classe'],'gray')
             folium.GeoJson(
-                r.geometry.__geo_interface__,
-                style_function=lambda f, c=cols[r['classe']]: {'fillColor':c,'fillOpacity':0.4,'color':'none'}
+                row.geometry.__geo_interface__,
+                style_function=lambda f, c=color: {'fillColor':c,'fillOpacity':0.4,'color':'none'}
             ).add_to(m)
     return m
 
-# 5. UI
+# 7. Interface Streamlit
 tabs = ['Zone de chaleur','Risque','Zonage','Pluviométrie']
 choice = st.sidebar.radio('Onglet', tabs)
 st.subheader(choice)
 
 if choice == 'Pluviométrie':
-    # --- Données annuelles ---
+    # -- Annuel
     if not pluvio.empty:
         st.subheader('Données annuelles')
         st.dataframe(pluvio)
-        st.markdown('**Évolution (2000-2024)**')
+        st.markdown('**Évolution (2000–2024)**')
         st.line_chart(pluvio.set_index('year')['value'])
         st.markdown('**Moyenne mobile 3 ans**')
-        st.line_chart(pluvio.set_index('year')['value'].rolling(3, center=True).mean())
-        st.markdown('**Histogramme par décennie**')
-        dec = pluvio.set_index('year')['value'].groupby(lambda y: (y//10)*10).sum()
+        st.line_chart(pluvio.set_index('year')['value'].rolling(3,center=True).mean())
+        st.markdown('**Histogramme décennal**')
+        dec = pluvio.set_index('year')['value'].groupby(lambda y:(y//10)*10).sum()
         st.bar_chart(dec)
         st.markdown('**Anomalies annuelles**')
-        anomalies = pluvio.set_index('year')['value'] - pluvio['value'].mean()
-        st.bar_chart(anomalies)
+        st.bar_chart(pluvio.set_index('year')['value'] - pluvio['value'].mean())
     else:
-        st.info("Pas de données annuelles disponibles.")
-
-    # --- Moyennes mensuelles ---
+        st.info('Pas de données annuelles.')
+    # -- Mensuel
     if not pluvio_mensuel.empty:
-        st.subheader('Moyennes mensuelles (Janv–Déc)')
-        # détecter nom de colonne mois
-        month_col = 'Mois' if 'Mois' in pluvio_mensuel.columns else 'month'
-        # tri
-        if month_col == 'Mois':
-            order = ["Janv.","Févr.","Mars","Avr.","Mai","Juin","Juil.","Août","Sept.","Oct.","Nov.","Déc."]
-            x_field = alt.X(f'{month_col}:N', sort=order)
-        else:
-            x_field = alt.X(f'{month_col}:N', sort=pluvio_mensuel[month_col].unique().tolist())
+        st.subheader('Moyennes mensuelles (1–12)')
         chart = alt.Chart(pluvio_mensuel).mark_bar(color='#3182bd').encode(
-            x=x_field,
-            y='value:Q',
-            tooltip=[month_col,'value']
+            x=alt.X('Mois:O', title='Mois', sort=list(range(1,13))),
+            y=alt.Y('value:Q', title='Pluviométrie (mm)'),
+            tooltip=['Mois','value']
         ).properties(height=300)
         st.altair_chart(chart, use_container_width=True)
     else:
-        st.info("Pas de données mensuelles disponibles.")
-
+        st.info('Pas de données mensuelles.')
 else:
-    func_map = {'Zone de chaleur':heatmap_map,
-                'Risque':risk_map,
-                'Zonage':zonage_map}
-    st_folium(func_map[choice](), width=800, height=600)
-
-if choice == 'Zone de chaleur':
-    df = pd.DataFrame(points)[['name','comment']]
-    st.subheader('Informations terrain')
-    st.dataframe(df)
+    mapper = {'Zone de chaleur':heatmap_map,'Risque':risk_map,'Zonage':zonage_map}
+    st_folium(mapper[choice](), width=800, height=600)
+    if choice == 'Zone de chaleur':
+        df_info = pd.DataFrame(points)[['name','comment']]
+        st.subheader('Informations terrain')
+        st.dataframe(df_info)
