@@ -63,16 +63,18 @@ points = [
      "comment":"Crue soudaine à 1,0 m en bordure de canal.","images":["images/yoaghin_ne1.jpg","images/yoaghin_ne2.jpg","images/yoaghin_ne3.jpg","images/yoaghin_ne4.jpg"]},
     {"lat":12.338500,"lon":-1.582500,"name":"Yoaghin SE","contact":"Mme Salif",
      "comment":"Glissement de berge observé à 0,6 m.","images":["images/yoaghin_se1.jpg","images/yoaghin_se2.jpg","images/yoaghin_se3.jpg"]},
-    # Saonre (17 repères) — sans images
+    # Saonre (exemple: 1 seul, les suivants à recopier)
     {"lat":12.286258,"lon":-1.559080,"name":"Saonre 1","contact":"M. Nikiema",
      "comment":"Seuil d’eau à 0,5 m.","images":[]},
-    # … (Saonre 2 à Saonre 17)
 ]
 
 # 3. Chargement GeoJSON
 @st.cache_data
 def load_layer(path):
-    return gpd.read_file(path).to_crs(epsg=4326) if os.path.exists(path) else gpd.GeoDataFrame([], crs="EPSG:4326")
+    if os.path.exists(path):
+        return gpd.read_file(path).to_crs(epsg=4326)
+    else:
+        return gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
 
 commune = load_layer("data/communes.geojson")
 roads   = load_layer("data/voirie.geojson")
@@ -124,15 +126,15 @@ def heatmap_map():
             fill=True,
             fill_opacity=0.2
         ).add_to(m)
-        # pop‑up
         html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
         for img in pt['images']:
             if os.path.exists(img):
                 b64 = encode_img(img)
                 html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
-        folium.Marker([pt['lat'],pt['lon']],
-                      popup=folium.Popup(html, max_width=300),
-                      icon=folium.Icon(color='orange', icon='tint', prefix='fa')
+        folium.Marker(
+            [pt['lat'],pt['lon']],
+            popup=folium.Popup(html, max_width=300),
+            icon=folium.Icon(color='orange', icon='tint', prefix='fa')
         ).add_to(m)
     return m
 
@@ -140,19 +142,18 @@ def heatmap_map():
 def risk_map():
     m = base_map()
     if 'classe' in grid.columns:
-        folium.Choropleth(geo_data=grid, data=grid,
-                          columns=['id','classe'], key_on='feature.properties.id',
-                          fill_color='YlOrRd', legend_name='Niveau de risque (1–5)'
+        folium.Choropleth(
+            geo_data=grid, data=grid,
+            columns=['id','classe'], key_on='feature.properties.id',
+            fill_color='YlOrRd', legend_name='Niveau de risque (1–5)'
         ).add_to(m)
     return m
 
 # 9. Contribution (remplace Zonage)
 def contribution_map():
-    # initialisation
     if 'reports' not in st.session_state:
         st.session_state.reports = []
 
-    # formulaire
     with st.form('report_form'):
         st.markdown("### Soumettre un rapport de terrain")
         lat     = st.number_input('Latitude', format="%.6f")
@@ -165,15 +166,15 @@ def contribution_map():
             st.session_state.reports.append({'lat':lat,'lon':lon,'contact':contact,'comment':comment,'images':encoded})
             st.success("Rapport ajouté.")
 
-    # affichage
     m = base_map()
     for rpt in st.session_state.reports:
         html = f"<b>{rpt['contact']}</b><br>{rpt['comment']}<br>"
         for src in rpt['images']:
             html += f"<img src='{src}' width='150'><br>"
-        folium.Marker([rpt['lat'],rpt['lon']],
-                      popup=folium.Popup(html, max_width=300),
-                      icon=folium.Icon(color='blue', icon='comment', prefix='fa')
+        folium.Marker(
+            [rpt['lat'], rpt['lon']],
+            popup=folium.Popup(html, max_width=300),
+            icon=folium.Icon(color='blue', icon='comment', prefix='fa')
         ).add_to(m)
     return m
 
