@@ -157,15 +157,14 @@ def heatmap_map():
     m = base_map()
     HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15).add_to(m)
     for pt in points:
-        folium.Circle(location=[pt['lat'],pt['lon']], radius=1000,
-                      color='#de2d26', fill=True, fill_opacity=0.3).add_to(m)
-        folium.Circle(location=[pt['lat'],pt['lon']], radius=2000,
-                      color='#feb24c', fill=True, fill_opacity=0.2).add_to(m)
+        # cercles rouge 1 km & jaune 2 km
+        folium.Circle([pt['lat'],pt['lon']], 1000, color='#de2d26', fill=True, fill_opacity=0.3).add_to(m)
+        folium.Circle([pt['lat'],pt['lon']], 2000, color='#feb24c', fill=True, fill_opacity=0.2).add_to(m)
+        # popup
         html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
         for img in pt['images']:
             if os.path.exists(img):
-                b64 = encode_img(img)
-                html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
+                html += f"<img src='data:image/jpeg;base64,{encode_img(img)}' width='150'><br>"
         folium.Marker([pt['lat'],pt['lon']], popup=folium.Popup(html, max_width=300),
                       icon=folium.Icon(color='red', icon='tint', prefix='fa')).add_to(m)
     m.fit_bounds([(p['lat'],p['lon']) for p in points])
@@ -197,34 +196,66 @@ def contribution_map():
 # 10. Interface onglets
 tabs = ['Zone de chaleur','Risque','Contribution','Pluviométrie']
 choice = st.sidebar.radio('Onglet', tabs)
-st.subheader(choice)
 
 if choice == 'Contribution':
-    # Votre logique de saisie de rapports (à intégrer ici)
+    st.subheader("📝 Contribution citoyenne")
+    # initialisation
+    if 'reports' not in st.session_state:
+        st.session_state.reports = []
+
+    # formulaire
+    with st.form("report_form", clear_on_submit=True):
+        lat = st.number_input("Latitude", format="%.6f")
+        lon = st.number_input("Longitude", format="%.6f")
+        contact = st.text_input("Votre nom")
+        comment = st.text_area("Votre remarque")
+        imgs = st.file_uploader("Photos (max 3)", type=['jpg','png'], accept_multiple_files=True)
+        if st.form_submit_button("Publier"):
+            encoded = [f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
+                       for f in imgs[:3]]
+            st.session_state.reports.append({
+                'lat':lat,'lon':lon,
+                'contact':contact,'comment':comment,
+                'images':encoded
+            })
+            st.success("Merci pour votre contribution !")
+
+    # affichage
     m = contribution_map()
+    for rpt in st.session_state.reports:
+        html = f"<b>{rpt['contact']}</b><br>{rpt['comment']}<br>"
+        for src in rpt['images']:
+            html += f"<img src='{src}' width='150'><br>"
+        folium.Marker([rpt['lat'],rpt['lon']],
+                      popup=folium.Popup(html, max_width=300),
+                      icon=folium.Icon(color='blue', icon='comment', prefix='fa')
+        ).add_to(m)
     st_folium(m, width=800, height=600)
 
 elif choice == 'Zone de chaleur':
+    st.subheader("🌡️ Zone de chaleur")
     st_folium(heatmap_map(), width=800, height=600)
     df = pd.DataFrame(points)[['name','contact','comment']]
     st.markdown("### Témoignages et contacts locaux")
     st.dataframe(df, height=250)
 
 elif choice == 'Risque':
+    st.subheader("⚠️ Carte de risque")
     st_folium(risk_map(), width=800, height=600)
 
 else:  # Pluviométrie
+    st.subheader("☔ Pluviométrie")
     if not pluvio.empty:
-        st.markdown("### Évolution annuelle (2000–2024)")
+        st.markdown("**Évolution annuelle (2000–2024)**")
         st.line_chart(pluvio.set_index('year')['value'])
     else:
-        st.info("Pas de données annuelles.")
+        st.info("Pas de données annuelles disponibles.")
     if not pluvio_mensuel.empty:
-        st.markdown("### Moyennes mensuelles")
+        st.markdown("**Moyennes mensuelles**")
         chart = alt.Chart(pluvio_mensuel).mark_bar(color='#3182bd').encode(
             x=alt.X('Mois:O', sort=list(pluvio_mensuel['Mois'])),
             y='value:Q', tooltip=['Mois','value']
         ).properties(height=300)
         st.altair_chart(chart, use_container_width=True)
     else:
-        st.info("Pas de données mensuelles.")
+        st.info("Pas de données mensuelles disponibles.")
