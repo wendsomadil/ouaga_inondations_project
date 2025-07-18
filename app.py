@@ -143,11 +143,33 @@ def encode_img(path):
 
 # 6. Base map
 def base_map():
-    m = folium.Map(location=[12.35,-1.60], zoom_start=13, tiles="CartoDB positron")
+    m = folium.Map(location=[12.35, -1.60], zoom_start=13, tiles="CartoDB positron")
+    # Limite de Ouagadougou
     if not commune.empty:
-        folium.GeoJson(commune, style_function=lambda f:{
-            'fillColor':'#a8ddb5','fillOpacity':0.2,'color':'none'
-        }).add_to(m)
+        folium.GeoJson(
+            commune,
+            name="Limite Ouaga",             # libellé personnalisé
+            style_function=lambda f:{
+                'fillColor':'#a8ddb5',
+                'fillOpacity':0.2,
+                'color':'none'
+            }
+        ).add_to(m)
+    # Voirie
+    folium.FeatureGroup("Voirie").add_child(
+        folium.GeoJson(roads, style_function=lambda f:{
+            'color':'grey','weight':1
+        })
+    ).add_to(m)
+    # Hydrographie
+    folium.FeatureGroup("Hydrographie").add_child(
+        folium.GeoJson(water, style_function=lambda f:{
+            'color':'blue','weight':1
+        })
+    ).add_to(m)
+
+    # Layer control
+    folium.LayerControl(collapsed=False).add_to(m)
     return m
 
 # 7. Zone de chaleur avec FeatureGroups
@@ -291,4 +313,4 @@ else:  # Pluviométrie
         st.altair_chart(chart, use_container_width=True)
     else:
         st.info("Pas de données mensuelles.")
-        
+
