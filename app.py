@@ -104,17 +104,19 @@ points = [
      "comment":"Digue perforée.","images":[]},
 ]
 
-# 3. Chargement GeoJSON
+# 3. Chargement des couches GeoJSON
 @st.cache_data
 def load_layer(path):
-    return gpd.read_file(path).to_crs(epsg=4326) if os.path.exists(path) else gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
+    if os.path.exists(path):
+        return gpd.read_file(path).to_crs(epsg=4326)
+    return gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
 
 commune = load_layer("data/communes.geojson")
 roads   = load_layer("data/voirie.geojson")
 water   = load_layer("data/hydrographie.geojson")
 grid    = load_layer("data/zones_base.geojson")
 
-# 4. Chargement pluviométrie
+# 4. Chargement des données pluviométriques
 @st.cache_data
 def load_pluvio():
     path = "data/pluviometrie.csv"
@@ -136,47 +138,51 @@ def load_pluvio_mensuel():
 pluvio = load_pluvio()
 pluvio_mensuel = load_pluvio_mensuel()
 
-# 5. Encode image → base64
+# 5. Helper pour images
 def encode_img(path):
     with open(path,'rb') as f:
         return base64.b64encode(f.read()).decode()
 
-# 6. Base map
+# 6. Fonction de base_map() avec FeatureGroups pour limite, voirie, hydro
 def base_map():
     m = folium.Map(location=[12.35, -1.60], zoom_start=13, tiles="CartoDB positron")
 
-    # Limite Ouaga en FeatureGroup
-    fg_limite = folium.FeatureGroup(name="Limite Ouaga", show=True)
+    # Limite Ouaga
+    fg_lim = folium.FeatureGroup(name="Limite Ouaga", show=True)
     folium.GeoJson(
         commune,
-        style_function=lambda f: {
-            'fillColor':'#a8ddb5','fillOpacity':0.2,'color':'none'
-        }
-    ).add_to(fg_limite)
-    m.add_child(fg_limite)
+        style_function=lambda f: {'fillColor':'#a8ddb5','fillOpacity':0.2,'color':'none'}
+    ).add_to(fg_lim)
+    m.add_child(fg_lim)
 
     # Voirie
-    fg_roads = folium.FeatureGroup(name="Voirie", show=False)
-    folium.GeoJson(roads, style_function=lambda f:{'color':'grey','weight':1}).add_to(fg_roads)
-    m.add_child(fg_roads)
+    fg_rd = folium.FeatureGroup(name="Voirie", show=False)
+    folium.GeoJson(
+        roads,
+        style_function=lambda f: {'color':'grey','weight':1}
+    ).add_to(fg_rd)
+    m.add_child(fg_rd)
 
     # Hydrographie
-    fg_water = folium.FeatureGroup(name="Hydrographie", show=False)
-    folium.GeoJson(water, style_function=lambda f:{'color':'blue','weight':1}).add_to(fg_water)
-    m.add_child(fg_water)
+    fg_w = folium.FeatureGroup(name="Hydrographie", show=False)
+    folium.GeoJson(
+        water,
+        style_function=lambda f: {'color':'blue','weight':1}
+    ).add_to(fg_w)
+    m.add_child(fg_w)
 
     return m
 
-# 7. Zone de chaleur avec FeatureGroups
+# 7. Zone de chaleur avec 3 couches toggle‑able
 def heatmap_map():
     m = base_map()
 
-    # HeatMap
+    # > HeatMap
     fg_hm = folium.FeatureGroup(name="HeatMap", show=True)
     HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15).add_to(fg_hm)
     m.add_child(fg_hm)
 
-    # Cercles 1 km (rouge)
+    # > Cercles 1 km
     fg_c1 = folium.FeatureGroup(name="Cercles 1 km", show=True)
     for pt in points:
         folium.Circle(
@@ -187,7 +193,7 @@ def heatmap_map():
         ).add_to(fg_c1)
     m.add_child(fg_c1)
 
-    # Halo 2 km (jaune)
+    # > Halo 2 km
     fg_c2 = folium.FeatureGroup(name="Halo 2 km", show=False)
     for pt in points:
         folium.Circle(
@@ -198,7 +204,7 @@ def heatmap_map():
         ).add_to(fg_c2)
     m.add_child(fg_c2)
 
-    # Pop‑ups
+    # > Pop‑ups
     for pt in points:
         html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
         for img in pt['images']:
@@ -211,17 +217,16 @@ def heatmap_map():
             icon=folium.Icon(color='red', icon='tint', prefix='fa')
         ).add_to(m)
 
-    # Layer control + recentrage
+    # LayerControl et recentrage
     folium.LayerControl(collapsed=False).add_to(m)
     m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
     return m
 
-# 8. Carte de risque avec toggle pour grille, voirie, hydro
+# 8. Carte de risque avec grille toggle‑able
 def risk_map():
     m = base_map()
 
-    # Grille de risque
-    fg_risk = folium.FeatureGroup(name="Grille de risque", show=True)
+    fg_r = folium.FeatureGroup(name="Grille de risque", show=True)
     if 'classe' in grid.columns:
         folium.Choropleth(
             geo_data=grid,
@@ -230,24 +235,26 @@ def risk_map():
             key_on='feature.properties.id',
             fill_color='YlOrRd',
             legend_name='Risque (1–5)'
-        ).add_to(fg_risk)
-    m.add_child(fg_risk)
-    # voirie & hydro
-    folium.FeatureGroup("Voirie").add_child(
-        folium.GeoJson(roads, style_function=lambda f:{'color':'grey','weight':1})
-    ).add_to(m)
-    folium.FeatureGroup("Hydrographie").add_child(
-        folium.GeoJson(water, style_function=lambda f:{'color':'blue','weight':1})
-    ).add_to(m)
+        ).add_to(fg_r)
+    m.add_child(fg_r)
+
+    # On ré‐ajoute voirie et hydro en cas d’onglet précédent masqué
+    fg_rd = folium.FeatureGroup(name="Voirie", show=False)
+    folium.GeoJson(roads, style_function=lambda f:{'color':'grey','weight':1}).add_to(fg_rd)
+    m.add_child(fg_rd)
+
+    fg_w = folium.FeatureGroup(name="Hydrographie", show=False)
+    folium.GeoJson(water, style_function=lambda f:{'color':'blue','weight':1}).add_to(fg_w)
+    m.add_child(fg_w)
 
     folium.LayerControl(collapsed=False).add_to(m)
     m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
     return m
-# 9. Contribution (anciennement “Zonage”)
+
+# 9. Contribution (anciennement “Zonage”, on conserve le même principe)
 def contribution_map():
     m = base_map()
-    folium.FeatureGroup("Maillage de base").add_to(m)
-    # on pourrait ici afficher grid ou autre… 
+    folium.FeatureGroup(name="Maillage de base", show=True).add_to(m)
     folium.LayerControl(collapsed=False).add_to(m)
     m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
     return m
