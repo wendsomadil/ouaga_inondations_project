@@ -34,13 +34,13 @@ points = [
     {"lat":12.306072, "lon":-1.566660, "name":"Zone Bonnaam 6", "contact":"Mme Balima",  "comment":"Points bas inondés jusqu’à 0,6 m.",           "images":["images/bonnaam6_1.jpg","images/bonnaam6_2.jpg"]},
     {"lat":12.304420, "lon":-1.569685, "name":"Zone Bonnaam 7", "contact":"M. Kaboré",   "comment":"Crue atteignant les clôtures de jardin.",     "images":["images/bonnaam7_1.jpg","images/bonnaam7_2.jpg"]},
     # Sandogo (4 sous‑zones)
-    {"lat":12.306373, "lon":-1.597861, "name":"Zone Sandogo 1", "contact":"Mme Sanon",   "comment":"Inondation localisée à 0,9 m autour du puits.","images":["images/sandogo1_1.jpg","images/sandogo1_2.jpg","images/sandogo1_3.jpg"]},
-    {"lat":12.305514, "lon":-1.593024, "name":"Zone Sandogo 2", "contact":"M. Kinda",    "comment":"Eaux à 0,7 m au marché.",                  "images":["images/sandogo2_1.jpg","images/sandogo2_2.jpg","images/sandogo2_3.jpg"]},
-    {"lat":12.305000, "lon":-1.595000, "name":"Zone Sandogo 3", "contact":"M. Zongo",    "comment":"Débordement mineur, profondeur faible.","images":["images/sandogo3_1.jpg"]},
-    {"lat":12.304000, "lon":-1.598000, "name":"Zone Sandogo 4", "contact":"Mme Ouédraogo","comment":"Zone périphérique légèrement inondée.","images":["images/sandogo4_1.jpg"]},
-    # Yoaghin NE & SE
-    {"lat":12.337832, "lon":-1.5847228,"name":"Zone B1 : YOAGHIN NE","contact":"M. Traoré", "comment":"Crue soudaine à 1,0 m en bordure de canal.","images":["images/yoaghin_ne1.jpg","images/yoaghin_ne2.jpg","images/yoaghin_ne3.jpg","images/yoaghin_ne4.jpg"]},
-    {"lat":12.338500, "lon":-1.582500,"name":"Zone B2 : YOAGHIN SE","contact":"Mme Salif","comment":"Glissement de berge observé à 0,6 m.","images":["images/yoaghin_se1.jpg","images/yoaghin_se2.jpg","images/yoaghin_se3.jpg"]}
+    {"lat":12.306373, "lon":-1.597861, "name":"Zone S : SANDOGO CENTRAL","contact":"Mme Sanon","comment":"Inondation localisée à 0,9 m autour du puits.","images":["images/sandogo1_1.jpg","images/sandogo1_2.jpg","images/sandogo1_3.jpg"]},
+    {"lat":12.305514, "lon":-1.593024, "name":"Zone S1 : SANDOGO OUEST",  "contact":"M. Kinda",   "comment":"Eaux à 0,7 m au marché.",                    "images":["images/sandogo2_1.jpg","images/sandogo2_2.jpg","images/sandogo2_3.jpg"]},
+    {"lat":12.305000, "lon":-1.595000, "name":"Zone S2 : SANDOGO EST",    "contact":"M. Zongo",    "comment":"Débordement mineur, profondeur faible.",       "images":["images/sandogo3_1.jpg"]},
+    {"lat":12.304000, "lon":-1.598000, "name":"Zone S3 : SANDOGO SUD",    "contact":"Mme Ouédraogo","comment":"Zone périphérique légèrement inondée.","images":["images/sandogo4_1.jpg"]},
+    # Yoaghin (B1 & B2)
+    {"lat":12.337832, "lon":-1.5847228,"name":"Zone B1 : YOAGHIN NE","contact":"M. Traoré","comment":"Crue soudaine à 1,0 m en bordure de canal.","images":["images/yoaghin_ne1.jpg","images/yoaghin_ne2.jpg","images/yoaghin_ne3.jpg","images/yoaghin_ne4.jpg"]},
+    {"lat":12.338500, "lon":-1.582500, "name":"Zone B2 : YOAGHIN SE","contact":"Mme Salif","comment":"Glissement de berge observé à 0,6 m.",            "images":["images/yoaghin_se1.jpg","images/yoaghin_se2.jpg","images/yoaghin_se3.jpg"]}
 ]
 
 # 3. Chargement des couches géographiques (GeoJSON)
