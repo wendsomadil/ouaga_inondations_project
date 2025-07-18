@@ -19,27 +19,30 @@ st.sidebar.header("🔍 Sélection de l'onglet")
 
 # 2. Points de terrain enrichis (coordonnées + riverains + photos)
 points = [
-    {"lat":12.286813, "lon":-1.612065, "name":"Zone A : BOASSA", "contact":"M. Koulibaly", "comment":"Le marigot déborde chaque saison pluvieuse.", "images":["images/boassa1.jpg","images/boassa2.jpg"]},
-    {"lat":12.324026, "lon":-1.609384, "name":"Zone B : YOAGHIN", "contact":"Mme Sawadogo", "comment":"Accès impraticables après 30 min de pluie.", "images":["images/yoaghin1.jpg","images/yoaghin2.jpg"]},
-    {"lat":12.320957, "lon":-1.615837, "name":"Zone C : KANKAMSE", "contact":"M. Ouédraogo", "comment":"Fondations fissurées par l’eau stagnante.", "images":["images/kankamse1.jpg","images/kankamse2.jpg"]},
-    {"lat":12.342865, "lon":-1.596492, "name":"Zone D : ZONGO", "contact":"Mme Traoré", "comment":"Eaux stagnantes attirent moustiques.", "images":["images/zongo1.jpg","images/zongo2.jpg"]},
-    {"lat":12.350765, "lon":-1.587388, "name":"Zone E : ST DOMINIQUE", "contact":"M. Dao", "comment":"Caniveaux débordés menaçant rez‑de‑chaussée.", "images":["images/stdom1.jpg","images/stdom2.jpg"]},
-    {"lat":12.335139, "lon":-1.616538, "name":"Zone F : ZAGTOULI", "contact":"Mme Kaboré", "comment":"Mur de protection fissuré en 2022.", "images":["images/zagtouli1.jpg","images/zagtouli2.jpg"]},
-    {"lat":12.367098, "lon":-1.638734, "name":"Zone G : BASSEKO", "contact":"M. Ouahab", "comment":"Seuil des fenêtres critique lors des crues.", "images":["images/basseko1.jpg","images/basseko2.jpg"]},
-    {"lat":12.322181, "lon":-1.579680, "name":"Zone Bonnaam 1", "contact":"M. Sawadogo", "comment":"4 photos d’inondation.", "images":["images/bonnaam1_1.jpg","images/bonnaam1_2.jpg","images/bonnaam1_3.jpg","images/bonnaam1_4.jpg"]},
-    {"lat":12.320240, "lon":-1.579680, "name":"Zone Bonnaam 2", "contact":"Mme Kinda", "comment":"3 photos d’inondation.", "images":["images/bonnaam2_1.jpg","images/bonnaam2_2.jpg","images/bonnaam2_3.jpg"]},
-    {"lat":12.313578, "lon":-1.572194, "name":"Zone Bonnaam 3", "contact":"M. Traoré", "comment":"4 photos d’inondation.", "images":["images/bonnaam3_1.jpg","images/bonnaam3_2.jpg","images/bonnaam3_3.jpg","images/bonnaam3_4.jpg"]},
-    {"lat":12.313206, "lon":-1.574259, "name":"Zone Bonnaam 4", "contact":"Mme Zongo", "comment":"2 photos d’inondation.", "images":["images/bonnaam4_1.jpg","images/bonnaam4_2.jpg"]},
-    {"lat":12.307954, "lon":-1.567229, "name":"Zone Bonnaam 5", "contact":"M. Ouédraogo", "comment":"Zone de 10 ha inondés.", "images":["images/bonnaam5_1.jpg","images/bonnaam5_2.jpg"]},
-    {"lat":12.306072, "lon":-1.566660, "name":"Zone Bonnaam 6", "contact":"Mme Balima", "comment":"2 photos d’inondation.", "images":["images/bonnaam6_1.jpg","images/bonnaam6_2.jpg"]},
-    {"lat":12.304420, "lon":-1.569685, "name":"Zone Bonnaam 7", "contact":"M. Kaboré", "comment":"2 photos d’inondation.", "images":["images/bonnaam7_1.jpg","images/bonnaam7_2.jpg"]},
-    {"lat":12.306373, "lon":-1.597861, "name":"Zone Sandogo 1", "contact":"Mme Sanon", "comment":"3 photos d’inondation.", "images":["images/sandogo1_1.jpg","images/sandogo1_2.jpg","images/sandogo1_3.jpg"]},
-    {"lat":12.305514, "lon":-1.593024, "name":"Zone Sandogo 2", "contact":"M. Kinda", "comment":"3 photos d’inondation.", "images":["images/sandogo2_1.jpg","images/sandogo2_2.jpg","images/sandogo2_3.jpg"]},
-    {"lat":12.305000, "lon":-1.595000, "name":"Zone Sandogo 3", "contact":"M. Zongo", "comment":"Coordonnée additionnelle.", "images":["images/sandogo3_1.jpg"]},
-    {"lat":12.304000, "lon":-1.598000, "name":"Zone Sandogo 4", "contact":"Mme Ouédraogo", "comment":"Coordonnée additionnelle.", "images":["images/sandogo4_1.jpg"]},
-    {"lat":12.337832, "lon":-1.5847228, "name":"Zone Yoaghin NE", "contact":"M. Traoré", "comment":"4 photos d’inondation.", "images":["images/yoaghin_ne1.jpg","images/yoaghin_ne2.jpg","images/yoaghin_ne3.jpg","images/yoaghin_ne4.jpg"]}
+    {"lat":12.286813, "lon":-1.612065, "name":"Zone A : BOASSA",    "contact":"M. Koulibaly", "comment":"Le marigot déborde chaque saison pluvieuse.", "images":["images/boassa1.jpg","images/boassa2.jpg"]},
+    {"lat":12.324026, "lon":-1.609384, "name":"Zone B : YOAGHIN",    "contact":"Mme Sawadogo","comment":"Accès impraticable après 30 min de pluie.",  "images":["images/yoaghin1.jpg","images/yoaghin2.jpg"]},
+    {"lat":12.320957, "lon":-1.615837, "name":"Zone C : KANKAMSE", "contact":"M. Ouédraogo","comment":"Fondations fissurées par l’eau stagnante.", "images":["images/kankamse1.jpg","images/kankamse2.jpg"]},
+    {"lat":12.342865, "lon":-1.596492, "name":"Zone D : ZONGO",     "contact":"Mme Traoré",  "comment":"Eaux stagnantes attirent moustiques.",          "images":["images/zongo1.jpg","images/zongo2.jpg"]},
+    {"lat":12.350765, "lon":-1.587388, "name":"Zone E : ST DOMINIQUE","contact":"M. Dao",      "comment":"Caniveaux débordés menaçant rez‑de‑chaussée.", "images":["images/stdom1.jpg","images/stdom2.jpg"]},
+    {"lat":12.335139, "lon":-1.616538, "name":"Zone F : ZAGTOULI",  "contact":"Mme Kaboré","comment":"Mur de protection fissuré en 2022.",      "images":["images/zagtouli1.jpg","images/zagtouli2.jpg"]},
+    {"lat":12.367098, "lon":-1.638734, "name":"Zone G : BASSEKO",   "contact":"M. Ouahab",   "comment":"Seuil des fenêtres critique lors des crues.","images":["images/basseko1.jpg","images/basseko2.jpg"]},
+    # Zone Bonnaam
+    {"lat":12.322181, "lon":-1.579680, "name":"Zone Bonnaam 1", "contact":"M. Sawadogo","comment":"Hauteur de crue atteignant 1,2 m.", "images":["images/bonnaam1_1.jpg","images/bonnaam1_2.jpg","images/bonnaam1_3.jpg","images/bonnaam1_4.jpg"]},
+    {"lat":12.320240, "lon":-1.579680, "name":"Zone Bonnaam 2", "contact":"Mme Kinda","comment":"Eau stagnante jusqu’à 0,8 m.", "images":["images/bonnaam2_1.jpg","images/bonnaam2_2.jpg","images/bonnaam2_3.jpg"]},
+    {"lat":12.313578, "lon":-1.572194, "name":"Zone Bonnaam 3", "contact":"M. Traoré","comment":"Inondation sur 1,5 ha du quartier.", "images":["images/bonnaam3_1.jpg","images/bonnaam3_2.jpg","images/bonnaam3_3.jpg","images/bonnaam3_4.jpg"]},
+    {"lat":12.313206, "lon":-1.574259, "name":"Zone Bonnaam 4", "contact":"Mme Zongo","comment":"Eau atteignant 0,5 m le long de la route.", "images":["images/bonnaam4_1.jpg","images/bonnaam4_2.jpg"]},
+    {"lat":12.307954, "lon":-1.567229, "name":"Zone Bonnaam 5", "contact":"M. Ouédraogo","comment":"Secteur de 10 ha submergé pendant 48 h.", "images":["images/bonnaam5_1.jpg","images/bonnaam5_2.jpg"]},
+    {"lat":12.306072, "lon":-1.566660, "name":"Zone Bonnaam 6", "contact":"Mme Balima","comment":"Points bas inondés jusqu’à 0,6 m.", "images":["images/bonnaam6_1.jpg","images/bonnaam6_2.jpg"]},
+    {"lat":12.304420, "lon":-1.569685, "name":"Zone Bonnaam 7", "contact":"M. Kaboré","comment":"Crue atteignant les clôtures de jardin.", "images":["images/bonnaam7_1.jpg","images/bonnaam7_2.jpg"]},
+    # Zone Sandogo
+    {"lat":12.306373, "lon":-1.597861, "name":"Zone Sandogo 1", "contact":"Mme Sanon","comment":"Inondation localisée à 0,9 m autour du puits.", "images":["images/sandogo1_1.jpg","images/sandogo1_2.jpg","images/sandogo1_3.jpg"]},
+    {"lat":12.305514, "lon":-1.593024, "name":"Zone Sandogo 2", "contact":"M. Kinda","comment":"Eaux à 0,7 m au marché.", "images":["images/sandogo2_1.jpg","images/sandogo2_2.jpg","images/sandogo2_3.jpg"]},
+    {"lat":12.305000, "lon":-1.595000, "name":"Zone Sandogo 3", "contact":"M. Zongo","comment":"Débordement mineur, profondeur faible.", "images":["images/sandogo3_1.jpg"]},
+    {"lat":12.304000, "lon":-1.598000, "name":"Zone Sandogo 4", "contact":"Mme Ouédraogo","comment":"Zone périphérique légèrement inondée.", "images":["images/sandogo4_1.jpg"]},
+    # Zone Yoaghin NE
+    {"lat":12.337832, "lon":-1.5847228, "name":"Zone Yoaghin NE", "contact":"M. Traoré","comment":"Crue soudaine à 1,0 m en bordure de canal.", "images":["images/yoaghin_ne1.jpg","images/yoaghin_ne2.jpg","images/yoaghin_ne3.jpg","images/yoaghin_ne4.jpg"]}
 ]
-# 3. Chargement des couches géographiques Chargement des couches géographiques Chargement des couches géographiques
+# 3. Chargement des couches géographiques. Chargement des couches géographiques Chargement des couches géographiques Chargement des couches géographiques
 @st.cache_data
 def load_layer(path):
     if os.path.exists(path):
@@ -152,4 +155,3 @@ else:
         df=pd.DataFrame(points)[['name','contact','comment']]
         st.subheader('Témoignages locaux')
         st.dataframe(df)
-
