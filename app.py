@@ -117,15 +117,17 @@ grid    = load_layer("data/zones_base.geojson")
 # 4. Chargement pluviométrie
 @st.cache_data
 def load_pluvio():
-    if os.path.exists("data/pluviometrie.csv"):
-        df = pd.read_csv("data/pluviometrie.csv")
+    path = "data/pluviometrie.csv"
+    if os.path.exists(path):
+        df = pd.read_csv(path)
         return df[(df.year>=2000)&(df.year<=2024)]
     return pd.DataFrame(columns=['year','value'])
 
 @st.cache_data
 def load_pluvio_mensuel():
-    if os.path.exists("data/pluvio_mensuel.csv"):
-        df = pd.read_csv("data/pluvio_mensuel.csv")
+    path = "data/pluvio_mensuel.csv"
+    if os.path.exists(path):
+        df = pd.read_csv(path)
         if 'month' in df.columns:
             df.rename(columns={'month':'Mois'}, inplace=True)
         return df
@@ -134,101 +136,131 @@ def load_pluvio_mensuel():
 pluvio = load_pluvio()
 pluvio_mensuel = load_pluvio_mensuel()
 
-# 5. Encode image en base64
+# 5. Encode image → base64
 def encode_img(path):
     with open(path,'rb') as f:
         return base64.b64encode(f.read()).decode()
 
-# 6. Fond de carte
+# 6. Base map
 def base_map():
     m = folium.Map(location=[12.35,-1.60], zoom_start=13, tiles="CartoDB positron")
     if not commune.empty:
         folium.GeoJson(commune, style_function=lambda f:{
             'fillColor':'#a8ddb5','fillOpacity':0.2,'color':'none'
         }).add_to(m)
-    if not roads.empty:
-        folium.GeoJson(roads, style_function=lambda f:{
-            'color':'grey','weight':1
-        }).add_to(m)
     return m
 
-# 7. Zone de chaleur
+# 7. Zone de chaleur avec FeatureGroups
 def heatmap_map():
     m = base_map()
-    HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15).add_to(m)
+    # HeatMap layer
+    hm = folium.FeatureGroup(name="HeatMap")
+    HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15).add_to(hm)
+    m.add_child(hm)
+
+    # Cercle 1 km (rouge) et Halo 2 km (jaune)
+    grp1 = folium.FeatureGroup(name="Cercles 1 km", show=True)
+    grp2 = folium.FeatureGroup(name="Halo 2 km", show=False)
     for pt in points:
-        # cercles rouge 1 km & jaune 2 km
-        folium.Circle([pt['lat'],pt['lon']], 1000, color='#de2d26', fill=True, fill_opacity=0.3).add_to(m)
-        folium.Circle([pt['lat'],pt['lon']], 2000, color='#feb24c', fill=True, fill_opacity=0.2).add_to(m)
-        # popup
+        folium.Circle(
+            location=[pt['lat'],pt['lon']],
+            radius=1000,
+            color='#de2d26',
+            fill=True, fill_opacity=0.3
+        ).add_to(grp1)
+        folium.Circle(
+            location=[pt['lat'],pt['lon']],
+            radius=2000,
+            color='#feb24c',
+            fill=True, fill_opacity=0.2
+        ).add_to(grp2)
+    m.add_child(grp1)
+    m.add_child(grp2)
+
+    # Pop‑ups
+    for pt in points:
         html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
         for img in pt['images']:
             if os.path.exists(img):
-                html += f"<img src='data:image/jpeg;base64,{encode_img(img)}' width='150'><br>"
-        folium.Marker([pt['lat'],pt['lon']], popup=folium.Popup(html, max_width=300),
-                      icon=folium.Icon(color='red', icon='tint', prefix='fa')).add_to(m)
-    m.fit_bounds([(p['lat'],p['lon']) for p in points])
+                b64 = encode_img(img)
+                html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
+        folium.Marker(
+            [pt['lat'],pt['lon']],
+            popup=folium.Popup(html, max_width=300),
+            icon=folium.Icon(color='red', icon='tint', prefix='fa')
+        ).add_to(m)
+
+    # contrôle des couches et recentrage
+    folium.LayerControl(collapsed=False).add_to(m)
+    m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
     return m
 
-# 8. Carte de risque
+# 8. Carte de risque avec toggle pour grille, voirie, hydro
 def risk_map():
     m = base_map()
+    # grille de risque
     if 'classe' in grid.columns:
-        folium.Choropleth(geo_data=grid, data=grid,
-                          columns=['id','classe'], key_on='feature.properties.id',
-                          fill_color='YlOrRd', legend_name='Niveau de risque (1–5)'
+        folium.Choropleth(
+            geo_data=grid, data=grid,
+            columns=['id','classe'], key_on='feature.properties.id',
+            fill_color='YlOrRd', legend_name='Risque (1–5)',
+            name='Grille de risque'
         ).add_to(m)
-    m.fit_bounds([(p['lat'],p['lon']) for p in points])
-    return m
+    # voirie & hydro
+    folium.FeatureGroup("Voirie").add_child(
+        folium.GeoJson(roads, style_function=lambda f:{'color':'grey','weight':1})
+    ).add_to(m)
+    folium.FeatureGroup("Hydrographie").add_child(
+        folium.GeoJson(water, style_function=lambda f:{'color':'blue','weight':1})
+    ).add_to(m)
 
-# 9. Contribution (anciennement Zonage)
+    folium.LayerControl(collapsed=False).add_to(m)
+    m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
+    return m
+# 9. Contribution (anciennement “Zonage”)
 def contribution_map():
     m = base_map()
-    if 'classe' in grid.columns:
-        cols={1:'#31a354',3:'#fed976',5:'#de2d26'}
-        for _,r in grid.iterrows():
-            folium.GeoJson(r.geometry, style_function=lambda f,c=cols[r['classe']]:{
-                'fillColor':c,'fillOpacity':0.4,'color':'none'
-            }).add_to(m)
-    m.fit_bounds([(p['lat'],p['lon']) for p in points])
+    folium.FeatureGroup("Maillage de base").add_to(m)
+    # on pourrait ici afficher grid ou autre… 
+    folium.LayerControl(collapsed=False).add_to(m)
+    m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
     return m
 
 # 10. Interface onglets
 tabs = ['Zone de chaleur','Risque','Contribution','Pluviométrie']
 choice = st.sidebar.radio('Onglet', tabs)
+st.subheader(choice)
 
 if choice == 'Contribution':
     st.subheader("📝 Contribution citoyenne")
-    # initialisation
     if 'reports' not in st.session_state:
         st.session_state.reports = []
 
-    # formulaire
     with st.form("report_form", clear_on_submit=True):
-        lat = st.number_input("Latitude", format="%.6f")
-        lon = st.number_input("Longitude", format="%.6f")
+        lat     = st.number_input("Latitude", format="%.6f")
+        lon     = st.number_input("Longitude", format="%.6f")
         contact = st.text_input("Votre nom")
         comment = st.text_area("Votre remarque")
-        imgs = st.file_uploader("Photos (max 3)", type=['jpg','png'], accept_multiple_files=True)
+        imgs    = st.file_uploader("Photos (max 3)", type=['jpg','png'], accept_multiple_files=True)
         if st.form_submit_button("Publier"):
-            encoded = [f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
-                       for f in imgs[:3]]
+            enc = [ f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
+                    for f in imgs[:3] ]
             st.session_state.reports.append({
-                'lat':lat,'lon':lon,
-                'contact':contact,'comment':comment,
-                'images':encoded
+                'lat':lat,'lon':lon,'contact':contact,
+                'comment':comment,'images':enc
             })
             st.success("Merci pour votre contribution !")
 
-    # affichage
+    # affichage rapports
     m = contribution_map()
     for rpt in st.session_state.reports:
         html = f"<b>{rpt['contact']}</b><br>{rpt['comment']}<br>"
         for src in rpt['images']:
             html += f"<img src='{src}' width='150'><br>"
-        folium.Marker([rpt['lat'],rpt['lon']],
-                      popup=folium.Popup(html, max_width=300),
-                      icon=folium.Icon(color='blue', icon='comment', prefix='fa')
+        folium.Marker(
+            [rpt['lat'],rpt['lon']],
+            popup=folium.Popup(html, max_width=300),
+            icon=folium.Icon(color='blue', icon='comment', prefix='fa')
         ).add_to(m)
     st_folium(m, width=800, height=600)
 
@@ -249,7 +281,7 @@ else:  # Pluviométrie
         st.markdown("**Évolution annuelle (2000–2024)**")
         st.line_chart(pluvio.set_index('year')['value'])
     else:
-        st.info("Pas de données annuelles disponibles.")
+        st.info("Pas de données annuelles.")
     if not pluvio_mensuel.empty:
         st.markdown("**Moyennes mensuelles**")
         chart = alt.Chart(pluvio_mensuel).mark_bar(color='#3182bd').encode(
@@ -258,4 +290,5 @@ else:  # Pluviométrie
         ).properties(height=300)
         st.altair_chart(chart, use_container_width=True)
     else:
-        st.info("Pas de données mensuelles disponibles.")
+        st.info("Pas de données mensuelles.")
+        
