@@ -2,19 +2,20 @@
 import streamlit as st
 from streamlit_folium import st_folium
 import folium
-from folium.plugins import HeatMap, Fullscreen
+from folium.plugins import HeatMap
 import geopandas as gpd
 import pandas as pd
 import os
 import warnings
 import base64
 import altair as alt
+from folium.plugins import Fullscreen
 
 warnings.filterwarnings("ignore")
 
 # 1. Configuration principale
-st.set_page_config(page_title="Zones inondables – Ouagadougou", layout="wide")
-st.title("📍 Cartographie participative des zones inondables")
+st.set_page_config(page_title="Zones inondables & Pluviométrie – Ouagadougou", layout="wide")
+st.title("📍 Cartographie participative des zones inondables de Ouagadougou")
 st.sidebar.header("🔍 Sélection de l'onglet")
 
 # 2. Points de terrain enrichis
@@ -134,7 +135,7 @@ points = [
     "comment":"Fissures sur le parapet.","images":["images/basseko6_1.jpg","images/basseko6_2.jpg"]},
 ]
 
-# 3. Chargement des GeoJSON
+# 3. Chargement des couches GeoJSON
 @st.cache_data
 def load_layer(path):
     if os.path.exists(path):
@@ -146,18 +147,20 @@ roads   = load_layer("data/voirie.geojson")
 water   = load_layer("data/hydrographie.geojson")
 grid    = load_layer("data/zones_base.geojson")
 
-# 4. Pluviométrie
+# 4. Chargement des données pluviométriques
 @st.cache_data
 def load_pluvio():
-    if os.path.exists("data/pluviometrie.csv"):
-        df = pd.read_csv("data/pluviometrie.csv")
+    path = "data/pluviometrie.csv"
+    if os.path.exists(path):
+        df = pd.read_csv(path)
         return df[(df.year>=2000)&(df.year<=2024)]
     return pd.DataFrame(columns=['year','value'])
 
 @st.cache_data
 def load_pluvio_mensuel():
-    if os.path.exists("data/pluvio_mensuel.csv"):
-        df = pd.read_csv("data/pluvio_mensuel.csv")
+    path = "data/pluvio_mensuel.csv"
+    if os.path.exists(path):
+        df = pd.read_csv(path)
         if 'month' in df.columns:
             df.rename(columns={'month':'Mois'}, inplace=True)
         return df
@@ -166,92 +169,195 @@ def load_pluvio_mensuel():
 pluvio = load_pluvio()
 pluvio_mensuel = load_pluvio_mensuel()
 
-# 5. Encode image
+# 5. Helper pour images
 def encode_img(path):
     with open(path,'rb') as f:
         return base64.b64encode(f.read()).decode()
 
-# 6. Carte de base
+# 6. Fonction de base_map() avec FeatureGroups pour limite, voirie, hydro
 def base_map():
-    m = folium.Map(location=[12.35,-1.60], zoom_start=13, tiles="CartoDB positron")
-    Fullscreen(position="topright", force_separate_button=True).add_to(m)
-    # Limite
-    fg = folium.FeatureGroup("Limite Ouaga", show=True)
-    folium.GeoJson(commune, style_function=lambda f:{'fillColor':'#a8ddb5','fillOpacity':0.2,'color':'none'}).add_to(fg)
-    m.add_child(fg)
-    # Voirie & hydro
-    for name, layer, style in [("Voirie",roads,{'color':'grey','weight':1}),("Hydro",water,{'color':'blue','weight':1})]:
-        fg = folium.FeatureGroup(name, show=False)
-        folium.GeoJson(layer, style_function=lambda f,s=style: s).add_to(fg)
-        m.add_child(fg)
+    m = folium.Map(location=[12.35, -1.60], zoom_start=13, tiles="CartoDB positron")
+
+    # bouton plein écran
+    Fullscreen(
+        position="topright",
+        title="Afficher plein écran",
+        title_cancel="Quitter plein écran",
+        force_separate_button=True
+    ).add_to(m)
+
+    # Limite Ouaga
+    fg_lim = folium.FeatureGroup(name="Limite Ouaga", show=True)
+    folium.GeoJson(
+        commune,
+        style_function=lambda f: {"fillColor":"#a8ddb5","fillOpacity":0.2,"color":"none"}
+    ).add_to(fg_lim)
+    m.add_child(fg_lim)
+
+    # Voirie
+    fg_rd = folium.FeatureGroup(name="Voirie", show=False)
+    folium.GeoJson(
+        roads,
+        style_function=lambda f: {"color":"grey","weight":1}
+    ).add_to(fg_rd)
+    m.add_child(fg_rd)
+
+    # Hydrographie
+    fg_w = folium.FeatureGroup(name="Hydrographie", show=False)
+    folium.GeoJson(
+        water,
+        style_function=lambda f: {"color":"blue","weight":1}
+    ).add_to(fg_w)
+    m.add_child(fg_w)
+
     return m
 
-# 7. Zone de chaleur
+# 7. Zone de chaleur avec 3 couches toggle‑able
 def heatmap_map():
     m = base_map()
-    HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15, name="HeatMap").add_to(m)
-    fg1 = folium.FeatureGroup("Cercle 1 km",show=True)
-    fg2 = folium.FeatureGroup("Halo 2 km",show=False)
-    for p in points:
-        folium.Circle([p['lat'],p['lon']],1000,color='#de2d26',fill=True,fill_opacity=0.3).add_to(fg1)
-        folium.Circle([p['lat'],p['lon']],2000,color='#feb24c',fill=True,fill_opacity=0.2).add_to(fg2)
-        html = f"<b>{p['name']}</b><br>{p['comment']}<br>"
-        for img in p['images']:
+
+    # > HeatMap
+    fg_hm = folium.FeatureGroup(name="HeatMap", show=True)
+    HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15).add_to(fg_hm)
+    m.add_child(fg_hm)
+
+    # > Cercles 1 km
+    fg_c1 = folium.FeatureGroup(name="Cercles 1 km", show=True)
+    for pt in points:
+        folium.Circle(
+            location=[pt['lat'],pt['lon']],
+            radius=1000,
+            color='#de2d26',
+            fill=True, fill_opacity=0.3
+        ).add_to(fg_c1)
+    m.add_child(fg_c1)
+
+    # > Halo 2 km
+    fg_c2 = folium.FeatureGroup(name="Halo 2 km", show=False)
+    for pt in points:
+        folium.Circle(
+            location=[pt['lat'],pt['lon']],
+            radius=2000,
+            color='#feb24c',
+            fill=True, fill_opacity=0.2
+        ).add_to(fg_c2)
+    m.add_child(fg_c2)
+
+    # > Pop‑ups
+    for pt in points:
+        html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
+        for img in pt['images']:
             if os.path.exists(img):
-                html += f"<img src='data:image/jpeg;base64,{encode_img(img)}' width='150'><br>"
-        folium.Marker([p['lat'],p['lon']], popup=html).add_to(m)
-    m.add_child(fg1); m.add_child(fg2)
+                b64 = encode_img(img)
+                html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
+        folium.Marker(
+            [pt['lat'],pt['lon']],
+            popup=folium.Popup(html, max_width=300),
+            icon=folium.Icon(color='red', icon='tint', prefix='fa')
+        ).add_to(m)
+
+    # LayerControl et recentrage
     folium.LayerControl(collapsed=False).add_to(m)
-    m.fit_bounds([[p['lat'],p['lon']] for p in points])
+    m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
     return m
 
-# 8. Sensibilisation
-def sensibilisation_section():
-    st.subheader("⚠️ Sensibilisation & bonnes pratiques")
-    st.markdown("**Avant** : nettoyer caniveaux, vérifier toitures…")
-    st.markdown("**Pendant** : pas plus de 30 cm, couper électricité…")
-    st.markdown("**Après** : désinfecter, signaler obstructions…")
+# 8. Carte de risque avec grille toggle‑able
+def risk_map():
+    m = base_map()
 
-# 9. Contribution
-def contribution_section():
+    fg_r = folium.FeatureGroup(name="Grille de risque", show=True)
+    if 'classe' in grid.columns:
+        folium.Choropleth(
+            geo_data=grid,
+            data=grid,
+            columns=['id','classe'],
+            key_on='feature.properties.id',
+            fill_color='YlOrRd',
+            legend_name='Risque (1–5)'
+        ).add_to(fg_r)
+    m.add_child(fg_r)
+
+    # On ré‐ajoute voirie et hydro en cas d’onglet précédent masqué
+    fg_rd = folium.FeatureGroup(name="Voirie", show=False)
+    folium.GeoJson(roads, style_function=lambda f:{'color':'grey','weight':1}).add_to(fg_rd)
+    m.add_child(fg_rd)
+
+    fg_w = folium.FeatureGroup(name="Hydrographie", show=False)
+    folium.GeoJson(water, style_function=lambda f:{'color':'blue','weight':1}).add_to(fg_w)
+    m.add_child(fg_w)
+
+    folium.LayerControl(collapsed=False).add_to(m)
+    m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
+    return m
+
+# 9. Contribution (anciennement “Zonage”, on conserve le même principe)
+def contribution_map():
+    m = base_map()
+    folium.FeatureGroup(name="Maillage de base", show=True).add_to(m)
+    folium.LayerControl(collapsed=False).add_to(m)
+    m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
+    return m
+
+# 10. Interface onglets
+tabs = ['Zone de chaleur','Risque','Contribution','Pluviométrie']
+choice = st.sidebar.radio('Onglet', tabs)
+st.subheader(choice)
+
+if choice == 'Zone de chaleur':
+    st.subheader("🌡️ Zone de chaleur")
+    st_folium(heatmap_map(), width=800, height=600)
+    df = pd.DataFrame(points)[['name','contact','comment']]
+    st.markdown("### Témoignages et contacts locaux")
+    st.dataframe(df, height=250)
+
+elif choice == 'Risque':
+    st.subheader("⚠️ Carte de risque")
+    st_folium(risk_map(), width=800, height=600)
+
+elif choice == 'Contribution':
     st.subheader("📝 Contribution citoyenne")
-    if 'reports' not in st.session_state: st.session_state.reports=[]
-    with st.form("f", clear_on_submit=True):
-        lat=st.number_input("Lat",format="%.6f"); lon=st.number_input("Lon",format="%.6f")
-        nm=st.text_input("Nom"); cm=st.text_area("Commentaire")
-        imgs=st.file_uploader("Photos", accept_multiple_files=True)
-        if st.form_submit_button("OK"):
-            enc=[f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}" for f in imgs[:3]]
-            st.session_state.reports.append({'lat':lat,'lon':lon,'nm':nm,'cm':cm,'imgs':enc})
-    m=base_map()
-    for r in st.session_state.reports:
-        html=f"<b>{r['nm']}</b><br>{r['cm']}<br>"
-        for s in r['imgs']: html+=f"<img src='{s}' width='150'><br>"
-        folium.Marker([r['lat'],r['lon']], popup=html, icon=folium.Icon(color='blue')).add_to(m)
-    st_folium(m,width=800,height=600)
+    if 'reports' not in st.session_state:
+        st.session_state.reports = []
 
-# 10. Pluviométrie
-def pluviometrie_section():
+    with st.form("report_form", clear_on_submit=True):
+        lat     = st.number_input("Latitude", format="%.6f")
+        lon     = st.number_input("Longitude", format="%.6f")
+        contact = st.text_input("Votre nom")
+        comment = st.text_area("Votre remarque")
+        imgs    = st.file_uploader("Photos (max 3)", type=['jpg','png'], accept_multiple_files=True)
+        if st.form_submit_button("Publier"):
+            enc = [f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
+                   for f in imgs[:3]]
+            st.session_state.reports.append({
+                'lat':lat,'lon':lon,'contact':contact,
+                'comment':comment,'images':enc
+            })
+            st.success("Merci pour votre contribution !")
+
+    m = contribution_map()
+    for rpt in st.session_state.reports:
+        html = f"<b>{rpt['contact']}</b><br>{rpt['comment']}<br>"
+        for src in rpt['images']:
+            html += f"<img src='{src}' width='150'><br>"
+        folium.Marker([rpt['lat'],rpt['lon']],
+                      popup=folium.Popup(html, max_width=300),
+                      icon=folium.Icon(color='blue', icon='comment', prefix='fa')
+        ).add_to(m)
+    st_folium(m, width=800, height=600)
+
+else:  # Pluviométrie
     st.subheader("☔ Pluviométrie")
-    if not pluvio.empty: st.line_chart(pluvio.set_index('year')['value'])
-    else: st.info("Pas de données annuelles.")
+    if not pluvio.empty:
+        st.markdown("**Évolution annuelle (2000–2024)**")
+        st.line_chart(pluvio.set_index('year')['value'])
+    else:
+        st.info("Pas de données annuelles.")
     if not pluvio_mensuel.empty:
-        chart=alt.Chart(pluvio_mensuel).mark_bar().encode(
-            x='Mois:O',y='value:Q',tooltip=['Mois','value']
-        )
-        st.altair_chart(chart,use_container_width=True)
-    else: st.info("Pas de données mensuelles.")
-
-# 11. Onglets
-tabs=['Zone de chaleur','Sensibilisation','Contribution','Pluviométrie']
-choice=st.sidebar.radio("",tabs)
-
-if choice=='Zone de chaleur':
-    st_folium(heatmap_map(),width=800,height=600)
-elif choice=='Sensibilisation':
-    sensibilisation_section()
-elif choice=='Contribution':
-    contribution_section()
-else:
-    pluviometrie_section()
-    
+        st.markdown("**Moyennes mensuelles**")
+        chart = alt.Chart(pluvio_mensuel).mark_bar(color='#3182bd').encode(
+            x=alt.X('Mois:O', sort=list(pluvio_mensuel['Mois'])),
+            y='value:Q', tooltip=['Mois','value']
+        ).properties(height=300)
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.info("Pas de données mensuelles.")
