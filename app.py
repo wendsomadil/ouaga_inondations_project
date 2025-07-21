@@ -250,6 +250,7 @@ if choice == 'Zone de chaleur':
 
 elif choice == 'Sensibilisation':
     st.subheader("📘 Sensibilisation & Bonnes pratiques")
+
     st.markdown("""
     **Pourquoi se préparer aux inondations ?**  
     - Réduire les dégâts matériels  
@@ -281,10 +282,12 @@ elif choice == 'Sensibilisation':
     - **Protection Civile** : +226 15 20 30 40  
     - [Guide pratique INDC-BF (PDF)](https://example.org/guide-indc-bf.pdf)  
     """)
-    if st.checkbox("Afficher la carte des zones inondables"):
-        # On récupère la carte de risque de base
-        m = risk_map()
-        # On y ajoute les marqueurs "points de terrain" avec les images en popup
+
+    # 1) Construisons la carte de risque une seule fois
+    m = risk_map()
+
+    # 2) Si l'utilisateur coche, on ajoute les marqueurs terrain
+    if st.checkbox("Afficher les relevés de terrain (avec photos)"):
         for pt in points:
             html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
             for img in pt['images']:
@@ -296,8 +299,13 @@ elif choice == 'Sensibilisation':
                 popup=folium.Popup(html, max_width=300),
                 icon=folium.Icon(color='green', icon='info-sign')
             ).add_to(m)
-        st_folium(m, width=800, height=500)
 
+    # 3) On affiche **une seule fois** la carte interactive, full‑screen
+    st_folium(
+        m,
+        width=1200,          # ou use_container_width=True
+        height=700
+    )
 
 elif choice == 'Contribution':
     st.subheader("📝 Contribution citoyenne")
