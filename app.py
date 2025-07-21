@@ -264,29 +264,40 @@ def heatmap_map():
 def risk_map():
     m = base_map()
 
+    # FeatureGroup pour la grille de risque
     fg_r = folium.FeatureGroup(name="Grille de risque", show=True)
-    if 'classe' in grid.columns:
-        folium.Choropleth(
-            geo_data=grid,
-            data=grid,
-            columns=['id','classe'],
-            key_on='feature.properties.id',
-            fill_color='YlOrRd',
-            legend_name='Risque (1–5)'
-        ).add_to(fg_r)
+    try:
+        if (not grid.empty) and ('classe' in grid.columns):
+            folium.Choropleth(
+                geo_data=grid,
+                data=grid,
+                columns=['id','classe'],
+                key_on='feature.properties.id',
+                fill_color='YlOrRd',
+                legend_name='Risque (1–5)'
+            ).add_to(fg_r)
+        else:
+            # Si grid manquante ou mal formée, on affiche un message
+            folium.map.Popup("⚠️ Données de risque indisponibles").add_to(fg_r)
+    except Exception as e:
+        # En dév tu peux loguer e, en prod on signale à l'utilisateur
+        folium.map.Popup(f"Erreur chargement risque: {str(e)}").add_to(fg_r)
+
     m.add_child(fg_r)
 
-    # On ré‐ajoute voirie et hydro en cas d’onglet précédent masqué
-    fg_rd = folium.FeatureGroup(name="Voirie", show=False)
-    folium.GeoJson(roads, style_function=lambda f:{'color':'grey','weight':1}).add_to(fg_rd)
-    m.add_child(fg_rd)
-
-    fg_w = folium.FeatureGroup(name="Hydrographie", show=False)
-    folium.GeoJson(water, style_function=lambda f:{'color':'blue','weight':1}).add_to(fg_w)
-    m.add_child(fg_w)
+    # On ré‐ajoute voirie et hydro pour pouvoir les (dé)cocher
+    for name, layer, style in [
+        ("Voirie", roads, {'color':'grey','weight':1}),
+        ("Hydrographie", water, {'color':'blue','weight':1})
+    ]:
+        fg = folium.FeatureGroup(name=name, show=False)
+        folium.GeoJson(layer, style_function=lambda f, s=style: s).add_to(fg)
+        m.add_child(fg)
 
     folium.LayerControl(collapsed=False).add_to(m)
-    m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
+    # recentrage sur tous tes points
+    if points:
+        m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
     return m
 
 # 9. Contribution (anciennement “Zonage”, on conserve le même principe)
