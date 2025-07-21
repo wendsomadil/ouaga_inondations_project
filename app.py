@@ -2,14 +2,13 @@
 import streamlit as st
 from streamlit_folium import st_folium
 import folium
-from folium.plugins import HeatMap
+from folium.plugins import HeatMap, Fullscreen
 import geopandas as gpd
 import pandas as pd
 import os
 import warnings
 import base64
 import altair as alt
-from folium.plugins import Fullscreen
 
 warnings.filterwarnings("ignore")
 
