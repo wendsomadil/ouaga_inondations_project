@@ -177,11 +177,12 @@ def encode_img(path):
 # 6. Fonction de base_map() avec FeatureGroups pour limite, voirie, hydro
 def base_map():
     m = folium.Map(location=[12.35, -1.60], zoom_start=13, tiles="CartoDB positron")
+
     # bouton plein écran
     Fullscreen(
-        position='topright',
-        title='Afficher plein écran',
-        title_cancel='Quitter plein écran',
+        position="topright",
+        title="Afficher plein écran",
+        title_cancel="Quitter plein écran",
         force_separate_button=True
     ).add_to(m)
 
@@ -189,7 +190,7 @@ def base_map():
     fg_lim = folium.FeatureGroup(name="Limite Ouaga", show=True)
     folium.GeoJson(
         commune,
-        style_function=lambda f: {'fillColor':'#a8ddb5','fillOpacity':0.2,'color':'none'}
+        style_function=lambda f: {"fillColor":"#a8ddb5","fillOpacity":0.2,"color":"none"}
     ).add_to(fg_lim)
     m.add_child(fg_lim)
 
@@ -197,7 +198,7 @@ def base_map():
     fg_rd = folium.FeatureGroup(name="Voirie", show=False)
     folium.GeoJson(
         roads,
-        style_function=lambda f: {'color':'grey','weight':1}
+        style_function=lambda f: {"color":"grey","weight":1}
     ).add_to(fg_rd)
     m.add_child(fg_rd)
 
@@ -205,7 +206,7 @@ def base_map():
     fg_w = folium.FeatureGroup(name="Hydrographie", show=False)
     folium.GeoJson(
         water,
-        style_function=lambda f: {'color':'blue','weight':1}
+        style_function=lambda f: {"color":"blue","weight":1}
     ).add_to(fg_w)
     m.add_child(fg_w)
 
@@ -302,7 +303,18 @@ tabs = ['Zone de chaleur','Risque','Contribution','Pluviométrie']
 choice = st.sidebar.radio('Onglet', tabs)
 st.subheader(choice)
 
-if choice == 'Contribution':
+if choice == 'Zone de chaleur':
+    st.subheader("🌡️ Zone de chaleur")
+    st_folium(heatmap_map(), width=800, height=600)
+    df = pd.DataFrame(points)[['name','contact','comment']]
+    st.markdown("### Témoignages et contacts locaux")
+    st.dataframe(df, height=250)
+
+elif choice == 'Risque':
+    st.subheader("⚠️ Carte de risque")
+    st_folium(risk_map(), width=800, height=600)
+
+elif choice == 'Contribution':
     st.subheader("📝 Contribution citoyenne")
     if 'reports' not in st.session_state:
         st.session_state.reports = []
@@ -314,38 +326,25 @@ if choice == 'Contribution':
         comment = st.text_area("Votre remarque")
         imgs    = st.file_uploader("Photos (max 3)", type=['jpg','png'], accept_multiple_files=True)
         if st.form_submit_button("Publier"):
-            enc = [ f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
-                    for f in imgs[:3] ]
+            enc = [f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
+                   for f in imgs[:3]]
             st.session_state.reports.append({
                 'lat':lat,'lon':lon,'contact':contact,
                 'comment':comment,'images':enc
             })
             st.success("Merci pour votre contribution !")
 
-    # affichage rapports
     m = contribution_map()
     for rpt in st.session_state.reports:
         html = f"<b>{rpt['contact']}</b><br>{rpt['comment']}<br>"
         for src in rpt['images']:
             html += f"<img src='{src}' width='150'><br>"
-        folium.Marker(
-            [rpt['lat'],rpt['lon']],
-            popup=folium.Popup(html, max_width=300),
-            icon=folium.Icon(color='blue', icon='comment', prefix='fa')
+        folium.Marker([rpt['lat'],rpt['lon']],
+                      popup=folium.Popup(html, max_width=300),
+                      icon=folium.Icon(color='blue', icon='comment', prefix='fa')
         ).add_to(m)
     st_folium(m, width=800, height=600)
 
-elif choice == 'Zone de chaleur':
-    st.subheader("🌡️ Zone de chaleur")
-    st_folium(heatmap_map(), width=800, height=600)
-    df = pd.DataFrame(points)[['name','contact','comment']]
-    st.markdown("### Témoignages et contacts locaux")
-    st.dataframe(df, height=250)
-
-elif choice == 'Risque':
-    st.subheader("⚠️ Carte de risque")
-    st_folium(risk_map(), width=800, height=600)
-
 else:  # Pluviométrie
     st.subheader("☔ Pluviométrie")
     if not pluvio.empty:
@@ -362,25 +361,3 @@ else:  # Pluviométrie
         st.altair_chart(chart, use_container_width=True)
     else:
         st.info("Pas de données mensuelles.")
-
-elif choice == 'Risque':
-    st.subheader("⚠️ Carte de risque")
-    st_folium(risk_map(), width=800, height=600)
-
-else:  # Pluviométrie
-    st.subheader("☔ Pluviométrie")
-    if not pluvio.empty:
-        st.markdown("**Évolution annuelle (2000–2024)**")
-        st.line_chart(pluvio.set_index('year')['value'])
-    else:
-        st.info("Pas de données annuelles.")
-    if not pluvio_mensuel.empty:
-        st.markdown("**Moyennes mensuelles**")
-        chart = alt.Chart(pluvio_mensuel).mark_bar(color='#3182bd').encode(
-            x=alt.X('Mois:O', sort=list(pluvio_mensuel['Mois'])),
-            y='value:Q', tooltip=['Mois','value']
-        ).properties(height=300)
-        st.altair_chart(chart, use_container_width=True)
-    else:
-        st.info("Pas de données mensuelles.")
-
