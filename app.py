@@ -9,6 +9,7 @@ import os
 import warnings
 import base64
 import altair as alt
+from folium.plugins import Fullscreen
 
 warnings.filterwarnings("ignore")
 
@@ -176,6 +177,13 @@ def encode_img(path):
 # 6. Fonction de base_map() avec FeatureGroups pour limite, voirie, hydro
 def base_map():
     m = folium.Map(location=[12.35, -1.60], zoom_start=13, tiles="CartoDB positron")
+    # bouton plein écran
+    Fullscreen(
+        position='topright',
+        title='Afficher plein écran',
+        title_cancel='Quitter plein écran',
+        force_separate_button=True
+    ).add_to(m)
 
     # Limite Ouaga
     fg_lim = folium.FeatureGroup(name="Limite Ouaga", show=True)
@@ -333,6 +341,27 @@ elif choice == 'Zone de chaleur':
     df = pd.DataFrame(points)[['name','contact','comment']]
     st.markdown("### Témoignages et contacts locaux")
     st.dataframe(df, height=250)
+
+elif choice == 'Risque':
+    st.subheader("⚠️ Carte de risque")
+    st_folium(risk_map(), width=800, height=600)
+
+else:  # Pluviométrie
+    st.subheader("☔ Pluviométrie")
+    if not pluvio.empty:
+        st.markdown("**Évolution annuelle (2000–2024)**")
+        st.line_chart(pluvio.set_index('year')['value'])
+    else:
+        st.info("Pas de données annuelles.")
+    if not pluvio_mensuel.empty:
+        st.markdown("**Moyennes mensuelles**")
+        chart = alt.Chart(pluvio_mensuel).mark_bar(color='#3182bd').encode(
+            x=alt.X('Mois:O', sort=list(pluvio_mensuel['Mois'])),
+            y='value:Q', tooltip=['Mois','value']
+        ).properties(height=300)
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.info("Pas de données mensuelles.")
 
 elif choice == 'Risque':
     st.subheader("⚠️ Carte de risque")
