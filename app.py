@@ -282,7 +282,22 @@ elif choice == 'Sensibilisation':
     - [Guide pratique INDC-BF (PDF)](https://example.org/guide-indc-bf.pdf)  
     """)
     if st.checkbox("Afficher la carte des zones inondables"):
-        st_folium(risk_map(), width=800, height=500)
+        # On récupère la carte de risque de base
+        m = risk_map()
+        # On y ajoute les marqueurs "points de terrain" avec les images en popup
+        for pt in points:
+            html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
+            for img in pt['images']:
+                if os.path.exists(img):
+                    b64 = encode_img(img)
+                    html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
+            folium.Marker(
+                [pt['lat'], pt['lon']],
+                popup=folium.Popup(html, max_width=300),
+                icon=folium.Icon(color='green', icon='info-sign')
+            ).add_to(m)
+        st_folium(m, width=800, height=500)
+
 
 elif choice == 'Contribution':
     st.subheader("📝 Contribution citoyenne")
