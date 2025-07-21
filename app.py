@@ -68,7 +68,7 @@ points = [
      "comment":"Glissement de berge observé à 0,6 m.","images":["images/yoaghin_se1.jpg","images/yoaghin_se2.jpg","images/yoaghin_se3.jpg"]},
 
     # Saonre (17 repères)
-    {"lat":12.286258,"lon":-1.559080,"name":"Saonre 1","contact":"M. Nikiema",
+   {"lat":12.286258,"lon":-1.559080,"name":"Saonre 1","contact":"M. Nikiema",
      "comment":"Seuil d’eau à 0,5 m.","images":["images/saonre1_1.jpg","images/saonre1_2.jpg"]},
     {"lat":12.286834,"lon":-1.558946,"name":"Saonre 2","contact":"Mme Bouda",
      "comment":"Sédiments observés.","images":["images/saonre2_1.jpg","images/saonre2_2.jpg"]},
@@ -102,6 +102,36 @@ points = [
      "comment":"Route coupée.","images":["images/saonre16_1.jpg","images/saonre16_2.jpg"]},
     {"lat":12.285145,"lon":-1.561207,"name":"Saonre 17","contact":"M. Salif",
      "comment":"Digue perforée.","images":["images/saonre17_1.jpg","images/saonre17_2.jpg"]},
+
+     # — Naab‑Pougo (3 repères) avec commentaires uniques
+    {"lat":12.369183,"lon":-1.574075,"name":"Naab‑Pougo 1","contact":"M. Traoré",
+    "comment":"Rivière débordante sous les latérites.","images":["images/naab1_1.jpg","images/naab1_2.jpg"]},
+    {"lat":12.369156,"lon":-1.574081,"name":"Naab‑Pougo 2","contact":"Mme Salif",
+    "comment":"Infiltrations sous la passerelle.","images":["images/naab2_1.jpg","images/naab2_2.jpg"]},
+    {"lat":12.370153,"lon":-1.575372,"name":"Naab‑Pougo 3","contact":"M. Dao",
+    "comment":"Plaine inondée jusqu’au sentier.","images":["images/naab3_1.jpg","images/naab3_2.jpg"]},
+
+    # — Noncin (3 repères)
+    {"lat":12.369922,"lon":-1.578133,"name":"Noncin 1","contact":"Mme Zida",
+    "comment":"Canal artificiel saturé.","images":["images/noncin1_1.jpg","images/noncin1_2.jpg"]},
+    {"lat":12.369925,"lon":-1.578319,"name":"Noncin 2","contact":"M. Ouédraogo",
+    "comment":"Boue collante après la pluie.","images":["images/noncin2_1.jpg","images/noncin2_2.jpg"]},
+    {"lat":12.361122,"lon":-1.584544,"name":"Noncin 3","contact":"Mme Balima",
+    "comment":"Talus érodé par le ruissellement.","images":["images/noncin3_1.jpg","images/noncin3_2.jpg"]},
+
+    # — Basseko (6 repères)
+    {"lat":12.361122,"lon":-1.584553,"name":"Basseko 1","contact":"M. Nikiema",
+    "comment":"Accès barré par la flaque.","images":["images/basseko1_1.jpg","images/basseko1_2.jpg"]},
+    {"lat":12.361144,"lon":-1.584461,"name":"Basseko 2","contact":"Mme Sawadogo",
+    "comment":"Zones marécageuses persistantes.","images":["images/basseko2_1.jpg","images/basseko2_2.jpg"]},
+    {"lat":12.360361,"lon":-1.589486,"name":"Basseko 3","contact":"M. Traoré",
+    "comment":"Route secondaire inondée.","images":["images/basseko3_1.jpg","images/basseko3_2.jpg"]},
+    {"lat":12.357653,"lon":-1.589600,"name":"Basseko 4","contact":"Mme Zongo",
+    "comment":"Station de bus impraticable.","images":["images/basseko4_1.jpg","images/basseko4_2.jpg"]},
+    {"lat":12.353017,"lon":-1.586556,"name":"Basseko 5","contact":"M. Sawadogo",
+    "comment":"Niveau d’eau à 30 cm sous trottoir.","images":["images/basseko5_1.jpg","images/basseko5_2.jpg"]},
+    {"lat":12.352989,"lon":-1.586633,"name":"Basseko 6","contact":"Mme Kaboré",
+    "comment":"Fissures sur le parapet.","images":["images/basseko6_1.jpg","images/basseko6_2.jpg"]},
 ]
 
 # 3. Chargement des couches GeoJSON
