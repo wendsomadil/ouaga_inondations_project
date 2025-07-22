@@ -256,10 +256,13 @@ elif choice == 'Zone de chaleur':
 
     # 2) HeatMap
     fg_hm = folium.FeatureGroup(name="HeatMap", show=True)
-    HeatMap([(p['lat'], p['lon']) for p in points], radius=25, blur=15).add_to(fg_hm)
+    HeatMap(
+        [(p['lat'], p['lon']) for p in points],
+        radius=25, blur=15
+    ).add_to(fg_hm)
     m.add_child(fg_hm)
 
-    # 3) Cercles 1 km
+    # 3) Cercles 1 km
     fg_c1 = folium.FeatureGroup(name="Cercles 1 km", show=True)
     for pt in points:
         folium.Circle(
@@ -270,7 +273,7 @@ elif choice == 'Zone de chaleur':
         ).add_to(fg_c1)
     m.add_child(fg_c1)
 
-    # 4) Halo 2 km
+    # 4) Halo 2 km
     fg_c2 = folium.FeatureGroup(name="Halo 2 km", show=False)
     for pt in points:
         folium.Circle(
@@ -281,8 +284,8 @@ elif choice == 'Zone de chaleur':
         ).add_to(fg_c2)
     m.add_child(fg_c2)
 
-    # 5) Groupe des relevés terrain avec popup image
-    fg_markers = folium.FeatureGroup(name="Relevés de terrain (avec photos)", show=False)
+    # 5) Relevés de terrain (avec photos) — **le fameux groupe à cocher** 
+    fg_photos = folium.FeatureGroup(name="Relevés de terrain (avec photos)", show=False)
     for pt in points:
         html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
         for img_path in pt['images']:
@@ -293,17 +296,19 @@ elif choice == 'Zone de chaleur':
             location=(pt['lat'], pt['lon']),
             popup=folium.Popup(html, max_width=300),
             icon=folium.Icon(color='red', icon='tint', prefix='fa')
-        ).add_to(fg_markers)
-    m.add_child(fg_markers)
+        ).add_to(fg_photos)
+    m.add_child(fg_photos)
 
-    # 6) Contrôle des couches
+    # 6) Toutes les couches avant le LayerControl
     folium.LayerControl(collapsed=False).add_to(m)
+
+    # 7) On ajuste le viewport
     m.fit_bounds([[pt['lat'], pt['lon']] for pt in points])
 
-    # 7) Affichage carte
+    # 8) Affichage unique de la carte interactive
     st_folium(m, width=800, height=600)
 
-    # 8) Données des témoignages
+    # 9) Tableau des témoignages
     st.markdown("### Témoignages et contacts locaux")
     df = pd.DataFrame(points)[['name','contact','comment']]
     st.dataframe(df, height=250)
