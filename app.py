@@ -251,12 +251,15 @@ if choice == 'Zone de chaleur':
 elif choice == 'Zone de chaleur':
     st.subheader("🌡️ Zone de chaleur")
 
-    # 1) Construire la carte de base (HeatMap + cercles)
+    # 1) Construire la carte de base (limites, voirie, hydro, HeatMap, cercles)
     m = base_map()
 
     # HeatMap
     fg_hm = folium.FeatureGroup(name="HeatMap", show=True)
-    HeatMap([(p['lat'], p['lon']) for p in points], radius=25, blur=15).add_to(fg_hm)
+    HeatMap(
+        [(p['lat'], p['lon']) for p in points],
+        radius=25, blur=15
+    ).add_to(fg_hm)
     m.add_child(fg_hm)
 
     # Cercles 1 km
@@ -281,17 +284,19 @@ elif choice == 'Zone de chaleur':
         ).add_to(fg_c2)
     m.add_child(fg_c2)
 
-    # Contrôle des couches (HeatMap / Cercles / Halo)
+    # Contrôle des couches
     folium.LayerControl(collapsed=False).add_to(m)
     m.fit_bounds([[pt['lat'], pt['lon']] for pt in points])
 
-    # 2) Checkbox pour ajouter les marqueurs terrain (avec popup photos)
-    if st.checkbox("Afficher les relevés de terrain (avec photos)"):
+    # 2) Case à cocher pour afficher/masquer les marqueurs terrain avec photos
+    show_photos = st.checkbox("Afficher les relevés de terrain (avec photos)")
+    if show_photos:
         for pt in points:
+            # Construction du HTML du popup
             html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
-            for img in pt['images']:
-                if os.path.exists(img):
-                    b64 = encode_img(img)
+            for img_path in pt['images']:
+                if os.path.exists(img_path):
+                    b64 = encode_img(img_path)
                     html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
             folium.Marker(
                 location=(pt['lat'], pt['lon']),
@@ -299,7 +304,7 @@ elif choice == 'Zone de chaleur':
                 icon=folium.Icon(color='red', icon='tint', prefix='fa')
             ).add_to(m)
 
-    # 3) Affichage unique de la carte interactive
+    # 3) Affichage **une seule fois** de la carte interactive
     st_folium(m, width=800, height=600)
 
     # 4) Tableau des témoignages
