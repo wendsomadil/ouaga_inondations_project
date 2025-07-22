@@ -248,6 +248,44 @@ if choice == 'Zone de chaleur':
     st.markdown("### Témoignages et contacts locaux")
     st.dataframe(df, height=250)
 
+elif choice == 'Zone de chaleur':
+    st.subheader("🌡️ Zone de chaleur")
+
+    # 1) Construisons la carte de heatmap sans marqueurs
+    m = base_map()
+    fg_hm = folium.FeatureGroup(name="HeatMap", show=True)
+    HeatMap([(p['lat'], p['lon']) for p in points], radius=25, blur=15).add_to(fg_hm)
+    m.add_child(fg_hm)
+    # Vous pouvez aussi ajouter ici cercles 1 km / halo 2 km si besoin…
+    folium.LayerControl(collapsed=False).add_to(m)
+    m.fit_bounds([[pt['lat'], pt['lon']] for pt in points])
+
+    # 2) Checkbox pour afficher / masquer les marqueurs photos
+    if st.checkbox("Afficher les relevés de terrain (photos)"):
+        for pt in points:
+            html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
+            for img_path in pt['images']:
+                if os.path.exists(img_path):
+                    b64 = encode_img(img_path)
+                    html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
+            folium.Marker(
+                [pt['lat'], pt['lon']],
+                popup=folium.Popup(html, max_width=300),
+                icon=folium.Icon(color='red', icon='tint', prefix='fa')
+            ).add_to(m)
+
+    # 3) Affichage unique de la carte interactive
+    st_folium(
+        m,
+        width=1200,           # tu peux mettre use_container_width=True
+        height=700
+    )
+
+    # 4) (Optionnel) lister les témoignages dessous
+    df = pd.DataFrame(points)[['name','contact','comment']]
+    st.markdown("### Témoignages et contacts locaux")
+    st.dataframe(df, height=250)
+
 elif choice == 'Sensibilisation':
     st.subheader("📘 Sensibilisation & Bonnes pratiques")
 
