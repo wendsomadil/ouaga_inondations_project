@@ -187,9 +187,6 @@ def base_map():
     fg_lim = folium.FeatureGroup(name="Limite Ouaga", show=True)
     folium.GeoJson(commune, style_function=lambda f: {"fillColor":"#a8ddb5","fillOpacity":0.2,"color":"none"}).add_to(fg_lim)
     m.add_child(fg_lim)
-    fg_rd = folium.FeatureGroup(name="Voirie", show=False)
-    folium.GeoJson(roads, style_function=lambda f: {"color":"grey","weight":1}).add_to(fg_rd)
-    m.add_child(fg_rd)
     fg_w = folium.FeatureGroup(name="Hydrographie", show=False)
     folium.GeoJson(water, style_function=lambda f: {"color":"blue","weight":1}).add_to(fg_w)
     m.add_child(fg_w)
@@ -199,11 +196,7 @@ def base_map():
 def heatmap_map(show_photos=False):
     m = base_map()
     HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15,
-            name="HeatMap", show=True).add_to(m)
-    for radius, color, show, name in [
-        (1000, "#de2d26", False, "Cercles 0.5 km"),
-        (2000, "#feb24c", False, "Halo 1 km")
-    ]:
+            name="HeatMap", show=True).add_to(m):
         fg = folium.FeatureGroup(name=name, show=show)
         for pt in points:
             folium.Circle(
