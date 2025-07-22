@@ -193,11 +193,12 @@ def base_map():
     return m
 
 # 7. Zone de chaleur
-def heatmap_map():
+def heatmap_map(show_photos=False):
     m = base_map()
     fg_hm = folium.FeatureGroup(name="HeatMap", show=True)
     HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15).add_to(fg_hm)
     m.add_child(fg_hm)
+
     if show_photos:
         for pt in points:
             html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
