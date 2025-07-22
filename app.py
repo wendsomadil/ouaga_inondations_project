@@ -231,7 +231,7 @@ def heatmap_map(show_photos=False):
     return m
 
 # 8. Carte de risque (utilisée en option dans sensibilisation)
-def risk_map():
+def risk_map(show_photos: bool=False):
     m = base_map()
     fg_r = folium.FeatureGroup(name="Grille de risque", show=True)
     if not grid.empty and 'classe' in grid.columns:
@@ -241,6 +241,18 @@ def risk_map():
             fill_color='YlOrRd', legend_name='Risque (1–5)'
         ).add_to(fg_r)
     m.add_child(fg_r)
+    if show_photos:
+        for pt in points:
+            html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
+            for img in pt['images']:
+                if os.path.exists(img):
+                    b64 = encode_img(img)
+                    html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
+            folium.Marker(
+                (pt['lat'], pt['lon']),
+                popup=folium.Popup(html, max_width=300),
+                icon=folium.Icon(color='green', icon='info-sign')
+            ).add_to(m)
     # ajouter voirie/hydro pour toggler
     for name, layer, style in [("Hydrographie", water, {'color':'blue','weight':1})]:
         fg = folium.FeatureGroup(name=name, show=False)
