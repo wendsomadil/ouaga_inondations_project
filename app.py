@@ -251,18 +251,15 @@ if choice == 'Zone de chaleur':
 elif choice == 'Zone de chaleur':
     st.subheader("🌡️ Zone de chaleur")
 
-    # 1) Construire la carte de base (limites, voirie, hydro, HeatMap, cercles)
+    # 1) Carte de base
     m = base_map()
 
-    # HeatMap
+    # 2) HeatMap
     fg_hm = folium.FeatureGroup(name="HeatMap", show=True)
-    HeatMap(
-        [(p['lat'], p['lon']) for p in points],
-        radius=25, blur=15
-    ).add_to(fg_hm)
+    HeatMap([(p['lat'], p['lon']) for p in points], radius=25, blur=15).add_to(fg_hm)
     m.add_child(fg_hm)
 
-    # Cercles 1 km
+    # 3) Cercles 1 km
     fg_c1 = folium.FeatureGroup(name="Cercles 1 km", show=True)
     for pt in points:
         folium.Circle(
@@ -273,7 +270,7 @@ elif choice == 'Zone de chaleur':
         ).add_to(fg_c1)
     m.add_child(fg_c1)
 
-    # Halo 2 km
+    # 4) Halo 2 km
     fg_c2 = folium.FeatureGroup(name="Halo 2 km", show=False)
     for pt in points:
         folium.Circle(
@@ -284,32 +281,31 @@ elif choice == 'Zone de chaleur':
         ).add_to(fg_c2)
     m.add_child(fg_c2)
 
-    # Contrôle des couches
+    # 5) Groupe des relevés terrain avec popup image
+    fg_markers = folium.FeatureGroup(name="Relevés de terrain (avec photos)", show=False)
+    for pt in points:
+        html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
+        for img_path in pt['images']:
+            if os.path.exists(img_path):
+                b64 = encode_img(img_path)
+                html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
+        folium.Marker(
+            location=(pt['lat'], pt['lon']),
+            popup=folium.Popup(html, max_width=300),
+            icon=folium.Icon(color='red', icon='tint', prefix='fa')
+        ).add_to(fg_markers)
+    m.add_child(fg_markers)
+
+    # 6) Contrôle des couches
     folium.LayerControl(collapsed=False).add_to(m)
     m.fit_bounds([[pt['lat'], pt['lon']] for pt in points])
 
-    # 2) Case à cocher pour afficher/masquer les marqueurs terrain avec photos
-    show_photos = st.checkbox("Afficher les relevés de terrain (avec photos)")
-    if show_photos:
-        for pt in points:
-            # Construction du HTML du popup
-            html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
-            for img_path in pt['images']:
-                if os.path.exists(img_path):
-                    b64 = encode_img(img_path)
-                    html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
-            folium.Marker(
-                location=(pt['lat'], pt['lon']),
-                popup=folium.Popup(html, max_width=300),
-                icon=folium.Icon(color='red', icon='tint', prefix='fa')
-            ).add_to(m)
-
-    # 3) Affichage **une seule fois** de la carte interactive
+    # 7) Affichage carte
     st_folium(m, width=800, height=600)
 
-    # 4) Tableau des témoignages
-    df = pd.DataFrame(points)[['name','contact','comment']]
+    # 8) Données des témoignages
     st.markdown("### Témoignages et contacts locaux")
+    df = pd.DataFrame(points)[['name','contact','comment']]
     st.dataframe(df, height=250)
 
 elif choice == 'Sensibilisation':
