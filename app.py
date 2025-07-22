@@ -308,39 +308,52 @@ elif choice == 'Zone de chaleur':
     st.dataframe(df, height=250)
 
 elif choice == 'Sensibilisation':
-    st.subheader("📘 Sensibilisation & Bonnes pratiques")
+    st.subheader("📘 Sensibilisation & Bonnes pratiques face aux inondations")
 
-    st.markdown("""
-    **Pourquoi se préparer aux inondations ?**  
-    - Réduire les dégâts matériels  
-    - Protéger la vie et la santé  
-    - Limiter les déplacements d'urgence  
-    """)
+    st.info("**Pourquoi se préparer ?**\n"
+            "- Réduire les dégâts matériels\n"
+            "- Sauvegarder la vie et la santé\n"
+            "- Diminuer les appels d'urgence\n"
+            "- Préserver la continuité des activités quotidiennes")
+
     st.markdown("### 🕰️ Avant la saison des pluies")
-    st.markdown("""
-    1. Vérifiez l’état de vos caniveaux et gouttières.  
-    2. Scellez les fissures de sous‑sol avec un mortier hydrofuge.  
-    3. Stockez vos biens de valeur en hauteur.  
-    4. Préparez un kit d’urgence (lampe, eau, pharmacie).  
-    """)
-    st.markdown("### 🌧️ En période de fortes pluies")
-    st.markdown("""
-    - Évitez de traverser un gué submergé (1 m d’eau suffit pour emporter un véhicule).  
-    - Coupez l’électricité si l’eau monte au ras des prises.  
-    - Restez informé·e via la radio locale ou les réseaux sociaux officiels.  
-    """)
+    st.success(
+        "- 🔍 **Inspection** : vérifiez caniveaux, gouttières et brides d’évacuation\n"
+        "- 🏠 **Renforcement** : calfeutrez portes et fenêtres du sous‑sol\n"
+        "- 📦 **Stockage** : placez vos objets de valeur en hauteur\n"
+        "- 🎒 **Kit d’urgence** : lampe, eau, pharmacie, radio à manivelle"
+    )
+
+    st.markdown("### 🌧️ Pendant les fortes pluies")
+    st.warning(
+        "- 🚫 **Ne traversez jamais** un passage submergé (1 m d’eau peut emporter un véhicule)\n"
+        "- ⚡ **Coupez** l’électricité dès que l’eau atteint les prises\n"
+        "- 📻 **Restez informé·e** via la radio locale (100.1 FM) ou le compte Twitter @OuagaMeteo"
+    )
+
     st.markdown("### 💧 Après l’inondation")
-    st.markdown("""
-    - N’utilisez pas l’eau du robinet tant que le réseau n’a pas été déclaré potable.  
-    - Débarrassez‑vous des objets imbibés d’eau (moquette, matelas) pour éviter la moisissure.  
-    - Vérifiez la solidité des murs et fondations avant de réintégrer les lieux.  
-    """)
-    st.markdown("### 🔗 Liens & Contacts")
-    st.markdown("""
-    - **Service d’Assainissement Municipal** : +226 25 30 40 50  
-    - **Protection Civile** : +226 15 20 30 40  
-    - [Guide pratique INDC-BF (PDF)](https://example.org/guide-indc-bf.pdf)  
-    """)
+    st.error(
+        "- 💧 **Interdiction** d’utiliser l’eau du robinet sans test de potabilité\n"
+        "- 🗑️ **Débarrassez** les objets imbibés (tapis, matelas) pour éviter la moisissure\n"
+        "- 🧱 **Sécurité** : vérifiez murs et fondations avant de réintégrer\n"
+    )
+
+    st.markdown("### 🔗 Ressources & Contacts utiles")
+    st.write("- 🚰 **ONEA** (Eau & Assainissement) : +226 25 30 40 50")  
+    st.write("- 👷 **Assainissement Municipal** : +226 25 31 41 60")  
+    st.write("- 🚨 **Protection Civile** : +226 15 20 30 40")  
+    st.write("- 📄 [Guide INDC-BF (PDF)](https://example.org/guide-indc-bf.pdf)")  
+    st.write("- 🌐 [OCHA Burkina Faso](https://www.unocha.org/bfa)")
+
+    st.markdown("### ❓ Quiz rapide")
+    q1 = st.radio("1. À quelle hauteur d'eau ne faut-il surtout pas engager un véhicule ?", 
+                  ["20 cm", "50 cm", "1 m", "2 m"])
+    if q1:
+        st.write("✅ Bonne réponse : 1 m")
+    q2 = st.radio("2. Quel geste prioritaire si l'eau atteint les prises ?", 
+                  ["Fermer fenêtres", "Couper électricité", "Mettre un parapluie", "Appeler un taxi"])
+    if q2:
+        st.write("✅ Bonne réponse : Couper électricité")
 
     # 1) Construisons la carte de risque une seule fois
     m = risk_map()
@@ -391,20 +404,52 @@ elif choice == 'Contribution':
         ).add_to(m)
     st_folium(m, width=800, height=600)
 
-else:  # Pluviométrie
-    st.subheader("☔ Pluviométrie")
+elif choice == "Pluviométrie":
+    st.subheader("☔ Analyse pluviométrique de Ouagadougou")
+
+    # --- Statistiques annuelles ---
     if not pluvio.empty:
-        st.markdown("**Évolution annuelle (2000–2024)**")
-        st.line_chart(pluvio.set_index('year')['value'])
+        st.markdown("### 📈 Évolution annuelle des précipitations (2000–2024)")
+        # Calcul des stats
+        year_min = pluvio.loc[pluvio.value.idxmin()]
+        year_max = pluvio.loc[pluvio.value.idxmax()]
+        mean_annual = pluvio.value.mean()
+        st.markdown(f"- **Moyenne annuelle** : {mean_annual:.1f} mm")
+        st.markdown(f"- **Année la plus sèche** : {int(year_min.year)} ({year_min.value:.1f} mm)")
+        st.markdown(f"- **Année la plus humide** : {int(year_max.year)} ({year_max.value:.1f} mm)")
+        # Graphique
+        st.line_chart(
+            pluvio.set_index("year")["value"]
+        )
     else:
-        st.info("Pas de données annuelles.")
+        st.info("⚠️ Pas de données annuelles disponibles.")
+
+    # --- Statistiques mensuelles ---
     if not pluvio_mensuel.empty:
-        st.markdown("**Moyennes mensuelles**")
-        chart = alt.Chart(pluvio_mensuel).mark_bar().encode(
-            x=alt.X('Mois:O', sort=list(pluvio_mensuel['Mois'])),
-            y='value:Q', tooltip=['Mois','value']
-        ).properties(height=300)
+        st.markdown("### 📊 Moyenne mensuelle des précipitations (2000–2024)")
+        chart = (
+            alt.Chart(pluvio_mensuel)
+            .mark_bar()
+            .encode(
+                x=alt.X("Mois:O", sort=list(pluvio_mensuel["Mois"]), title="Mois"),
+                y=alt.Y("value:Q", title="Précipitations (mm)"),
+                tooltip=["Mois","value"]
+           )
+            .properties(height=300)
+        )
         st.altair_chart(chart, use_container_width=True)
+
+        # Top 3 des mois les plus pluvieux
+        monthly_mean = (
+            pluvio_mensuel
+            .groupby("Mois")["value"]
+            .mean()
+            .sort_values(ascending=False)
+        )
+        st.markdown("#### 🌧️ Top 3 des mois les plus pluvieux (moyenne):")
+        for mois, val in monthly_mean.head(3).items():
+            st.markdown(f"- **{mois}** : {val:.1f} mm")
     else:
-        st.info("Pas de données mensuelles.")
+        st.info("⚠️ Pas de données mensuelles disponibles.")
+
         
