@@ -201,8 +201,8 @@ def heatmap_map(show_photos=False):
     HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15,
             name="HeatMap", show=True).add_to(m)
     for radius, color, show, name in [
-        (1000, "#de2d26", True, "Cercles 1 km"),
-        (2000, "#feb24c", False, "Halo 2 km")
+        (1000, "#de2d26", False, "Cercles 0.5 km"),
+        (2000, "#feb24c", False, "Halo 1 km")
     ]:
         fg = folium.FeatureGroup(name=name, show=show)
         for pt in points:
