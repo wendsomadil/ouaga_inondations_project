@@ -254,7 +254,6 @@ def contribution_map():
     m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
     return m
 
-@st.cache_data(show_spinner=False)
 def build_heatmap_base():
     m = base_map()
     HeatMap([(p['lat'], p['lon']) for p in points], radius=25, blur=15,
@@ -291,7 +290,6 @@ def add_photo_markers(m, points):
     fg.add_to(m)
     return m
 
-@st.cache_data(show_spinner=False)
 def build_map(show_photos: bool):
     m = build_heatmap_base()
     if show_photos:
