@@ -254,21 +254,67 @@ def contribution_map():
     m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
     return m
 
+@st.cache_data(show_spinner=False)
+def build_heatmap_base():
+    m = base_map()
+    HeatMap([(p['lat'], p['lon']) for p in points], radius=25, blur=15,
+            name="HeatMap", show=True).add_to(m)
+    for radius, color, show, name in [
+        (1000, "#de2d26", True, "Cercles 1 km"),
+        (2000, "#feb24c", False, "Halo 2 km")
+    ]:
+        fg = folium.FeatureGroup(name=name, show=show)
+        for pt in points:
+            folium.Circle(
+                location=(pt['lat'], pt['lon']),
+                radius=radius,
+                color=color, fill=True, fill_opacity=0.3
+            ).add_to(fg)
+        fg.add_to(m)
+    folium.LayerControl(collapsed=False).add_to(m)
+    m.fit_bounds([[pt['lat'], pt['lon']] for pt in points])
+    return m
+
+def add_photo_markers(m, points):
+    fg = folium.FeatureGroup(name="Relevés (photos)", show=True)
+    for pt in points:
+        html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
+        for img in pt['images']:
+            if os.path.exists(img):
+                b64 = encode_img(img)
+                html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
+        folium.Marker(
+            (pt['lat'], pt['lon']),
+            popup=folium.Popup(html, max_width=300),
+            icon=folium.Icon(color='red', icon='tint', prefix='fa')
+        ).add_to(fg)
+    fg.add_to(m)
+    return m
+
+@st.cache_data(show_spinner=False)
+def build_map(show_photos: bool):
+    m = build_heatmap_base()
+    if show_photos:
+        m = add_photo_markers(m, points)
+    return m
+
 # 10. Interface onglets
 tabs = ['Zone de chaleur','Sensibilisation','Contribution','Pluviométrie']
 choice = st.sidebar.radio('Onglet', tabs)
 
 if choice == 'Zone de chaleur':
     st.subheader("🌡️ Zone de chaleur")
-    
-    # 1) Case à cocher pour activer les pop‑ups photo
+
+    # Checkbox pour activer/désactiver les photos
     show_photos = st.checkbox("Afficher les relevés de terrain (avec photos)")
-    
-    # 2) On appelle UNE SEULE FOIS la fonction heatmap_map, en lui passant show_photos
-    m = heatmap_map(show_photos)
+
+    # Build et cache la carte selon l’état de la checkbox
+    m = build_map(show_photos)
+
+    # Affiche UNE SEULE fois la carte
     st_folium(m, width=800, height=600)
-    
-    # 3) Tableau récapitulatif en dessous
+
+    # Puis le tableau
     df = pd.DataFrame(points)[['name','contact','comment']]
     st.markdown("### Témoignages et contacts locaux")
     st.dataframe(df, height=250)
