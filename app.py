@@ -196,15 +196,38 @@ def base_map():
     return m
 
 # 7. Zone de chaleur
-def heatmap_map():
+def heatmap_map(show_photos=False):
     m = base_map()
-    fg_hm = folium.FeatureGroup(name="HeatMap", show=True)
-    HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15).add_to(fg_hm)
-    m.add_child(fg_hm)
-    # cercles 1km, halo 2km, popups…
-    # … même code que vous aviez …
+    HeatMap([(p['lat'],p['lon']) for p in points], radius=25, blur=15,
+            name="HeatMap", show=True).add_to(m)
+    for radius, color, show, name in [
+        (1000, "#de2d26", True, "Cercles 1 km"),
+        (2000, "#feb24c", False, "Halo 2 km")
+    ]:
+        fg = folium.FeatureGroup(name=name, show=show)
+        for pt in points:
+            folium.Circle(
+                location=(pt['lat'],pt['lon']),
+                radius=radius,
+                color=color, fill=True, fill_opacity=0.3
+            ).add_to(fg)
+        fg.add_to(m)
     folium.LayerControl(collapsed=False).add_to(m)
     m.fit_bounds([[pt['lat'],pt['lon']] for pt in points])
+
+    if show_photos:
+        for pt in points:
+            html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
+            for img in pt['images']:
+                if os.path.exists(img):
+                    b64 = encode_img(img)
+                    html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
+            folium.Marker(
+                (pt['lat'],pt['lon']),
+                popup=folium.Popup(html, max_width=300),
+                icon=folium.Icon(color='red', icon='tint', prefix='fa')
+            ).add_to(m)
+
     return m
 
 # 8. Carte de risque (utilisée en option dans sensibilisation)
@@ -219,8 +242,7 @@ def risk_map():
         ).add_to(fg_r)
     m.add_child(fg_r)
     # ajouter voirie/hydro pour toggler
-    for name, layer, style in [("Voirie", roads, {'color':'grey','weight':1}),
-                               ("Hydrographie", water, {'color':'blue','weight':1})]:
+    for name, layer, style in [("Hydrographie", water, {'color':'blue','weight':1})]:
         fg = folium.FeatureGroup(name=name, show=False)
         folium.GeoJson(layer, style_function=lambda f, s=style: s).add_to(fg)
         m.add_child(fg)
@@ -320,11 +342,11 @@ elif choice == 'Sensibilisation':
             "- Réduire les dégâts matériels\n"
             "- Sauvegarder la vie et la santé\n"
             "- Diminuer les appels d'urgence\n"
-            "- Préserver la continuité des activités quotidiennes")
+            "- Préserver la continuité des activités")
 
     st.markdown("### 🕰️ Avant la saison des pluies")
     st.success(
-        "- 🔍 **Inspection** : vérifiez caniveaux, gouttières et brides d’évacuation\n"
+        "- 🔍 **Inspection** : vérifiez caniveaux, gouttières et buses\n"
         "- 🏠 **Renforcement** : calfeutrez portes et fenêtres du sous‑sol\n"
         "- 📦 **Stockage** : placez vos objets de valeur en hauteur\n"
         "- 🎒 **Kit d’urgence** : lampe, eau, pharmacie, radio à manivelle"
@@ -332,84 +354,68 @@ elif choice == 'Sensibilisation':
 
     st.markdown("### 🌧️ Pendant les fortes pluies")
     st.warning(
-        "- 🚫 **Ne traversez jamais** un passage submergé (1 m d’eau peut emporter un véhicule)\n"
+        "- 🚫 **Ne traversez jamais** un passage submergé\n"
         "- ⚡ **Coupez** l’électricité dès que l’eau atteint les prises\n"
-        "- 📻 **Restez informé·e** via la radio locale (100.1 FM) ou le compte Twitter @OuagaMeteo"
+        "- 📻 **Restez informé·e** via la radio locale (100.1 FM) ou @OuagaMeteo"
     )
 
     st.markdown("### 💧 Après l’inondation")
     st.error(
         "- 💧 **Interdiction** d’utiliser l’eau du robinet sans test de potabilité\n"
-        "- 🗑️ **Débarrassez** les objets imbibés (tapis, matelas) pour éviter la moisissure\n"
-        "- 🧱 **Sécurité** : vérifiez murs et fondations avant de réintégrer\n"
+        "- 🗑️ **Évacuez** les objets imbibés pour éviter moisissures\n"
+        "- 🧱 **Vérifiez** murs et fondations avant de réintégrer"
     )
 
     st.markdown("### 🔗 Ressources & Contacts utiles")
-    st.write("- 🚰 **ONEA** (Eau & Assainissement) : +226 25 30 40 50")  
+    st.write("- 🚰 **ONEA** : +226 25 30 40 50")  
     st.write("- 👷 **Assainissement Municipal** : +226 25 31 41 60")  
     st.write("- 🚨 **Protection Civile** : +226 15 20 30 40")  
+    st.write("- ➕ **Croix‑Rouge BF** : +226 25 49 65 34")  
     st.write("- 📄 [Guide INDC-BF (PDF)](https://example.org/guide-indc-bf.pdf)")  
     st.write("- 🌐 [OCHA Burkina Faso](https://www.unocha.org/bfa)")
 
-    st.markdown("### ❓ Quiz rapide")
-    q1 = st.radio("1. À quelle hauteur d'eau ne faut-il surtout pas engager un véhicule ?", 
-                  ["20 cm", "50 cm", "1 m", "2 m"])
-    if q1:
-        st.write("✅ Bonne réponse : 1 m")
-    q2 = st.radio("2. Quel geste prioritaire si l'eau atteint les prises ?", 
-                  ["Fermer fenêtres", "Couper électricité", "Mettre un parapluie", "Appeler un taxi"])
-    if q2:
-        st.write("✅ Bonne réponse : Couper électricité")
+    # Quiz rapide
+    q1 = st.radio("1. Hauteur critique pour un véhicule ?", ["20 cm","50 cm","1 m","2 m"])
+    if q1: st.write("✅ Réponse : 1 m")
+    q2 = st.radio("2. Premier réflexe si l’eau atteint les prises ?",
+                  ["Fermer fenêtres","Couper électricité","Mettre un parapluie","Appeler un taxi"])
+    if q2: st.write("✅ Réponse : Couper électricité")
 
-    # 1) Construisons la carte de risque une seule fois
-    m = risk_map()
-
-    # 2) Si l'utilisateur coche, on ajoute les marqueurs terrain
-    if st.checkbox("Afficher les relevés de terrain (avec photos)"):
-        for pt in points:
-            html = f"<h4>{pt['name']}</h4><i>{pt['contact']}</i><br>{pt['comment']}<br>"
-            for img in pt['images']:
-                if os.path.exists(img):
-                    b64 = encode_img(img)
-                    html += f"<img src='data:image/jpeg;base64,{b64}' width='150'><br>"
-            folium.Marker(
-                [pt['lat'], pt['lon']],
-                popup=folium.Popup(html, max_width=300),
-                icon=folium.Icon(color='green', icon='info-sign')
-            ).add_to(m)
-
-    # 3) On affiche **une seule fois** la carte interactive, full‑screen
-    st_folium(
-        m,
-        width=1200,          # ou use_container_width=True
-        height=700
-    )
+    # Carte de risque + photos
+    show_photos2 = st.checkbox("Voir relevés de terrain (photos)")
+    m2 = risk_map(show_photos2)
+    st_folium(m2, width=1000, height=600)
 
 elif choice == 'Contribution':
     st.subheader("📝 Contribution citoyenne")
     if 'reports' not in st.session_state:
         st.session_state.reports = []
-    with st.form("report_form", clear_on_submit=True):
-        lat     = st.number_input("Latitude", format="%.6f")
-        lon     = st.number_input("Longitude", format="%.6f")
+    with st.form("form", clear_on_submit=True):
+        lat = st.number_input("Latitude", format="%.6f")
+        lon = st.number_input("Longitude", format="%.6f")
         contact = st.text_input("Votre nom")
         comment = st.text_area("Votre remarque")
-        imgs    = st.file_uploader("Photos (max 3)", type=['jpg','png'], accept_multiple_files=True)
+        imgs = st.file_uploader("Photos (max 3)", type=['jpg','png'], accept_multiple_files=True)
         if st.form_submit_button("Publier"):
-            enc = [f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}" for f in imgs[:3]]
-            st.session_state.reports.append({'lat':lat,'lon':lon,'contact':contact,'comment':comment,'images':enc})
+            enc = [f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}" 
+                   for f in imgs[:3]]
+            st.session_state.reports.append({
+                'lat':lat,'lon':lon,'contact':contact,'comment':comment,'images':enc
+            })
             st.success("Merci pour votre contribution !")
-    m = contribution_map()
+
+    m3 = contribution_map()
     for rpt in st.session_state.reports:
         html = f"<b>{rpt['contact']}</b><br>{rpt['comment']}<br>"
         for src in rpt['images']:
             html += f"<img src='{src}' width='150'><br>"
-        folium.Marker([rpt['lat'],rpt['lon']],
-                      popup=folium.Popup(html, max_width=300),
-                      icon=folium.Icon(color='blue', icon='comment', prefix='fa')
-        ).add_to(m)
-    st_folium(m, width=800, height=600)
-
+        folium.Marker(
+            (rpt['lat'], rpt['lon']),
+            popup=folium.Popup(html, max_width=300),
+            icon=folium.Icon(color='blue', icon='comment', prefix='fa')
+        ).add_to(m3)
+    st_folium(m3, width=800, height=600)
+    
 elif choice == "Pluviométrie":
     st.subheader("☔ Analyse pluviométrique de Ouagadougou")
 
