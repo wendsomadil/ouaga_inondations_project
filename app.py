@@ -184,14 +184,25 @@ def base_map():
         title_cancel="Quitter plein écran",
         force_separate_button=True
     ).add_to(m)
-    # limite, voirie, hydro comme avant…
+
+    # Limite communale
     fg_lim = folium.FeatureGroup(name="Limite Ouaga", show=True)
-    folium.GeoJson(commune, style_function=lambda f: {"fillColor":"#a8ddb5","fillOpacity":0.2,"color":"none"}).add_to(fg_lim)
+    folium.GeoJson(
+        commune,
+        style_function=lambda f: {"fillColor":"#a8ddb5","fillOpacity":0.2,"color":"none"}
+    ).add_to(fg_lim)
     m.add_child(fg_lim)
-    fg_w = folium.FeatureGroup(name="Hydrographie", show=False)
-    folium.GeoJson(water, style_function=lambda f: {"color":"blue","weight":1}).add_to(fg_w)
+
+    # Hydrographie VISIBLE par défaut
+    fg_w = folium.FeatureGroup(name="Hydrographie", show=True)
+    folium.GeoJson(
+        water,
+        style_function=lambda f: {"color":"blue","weight":1}
+    ).add_to(fg_w)
     m.add_child(fg_w)
+
     return m
+
 
 # 7. Zone de chaleur
 def heatmap_map(show_photos=False):
